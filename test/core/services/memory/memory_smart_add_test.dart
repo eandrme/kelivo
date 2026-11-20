@@ -285,6 +285,80 @@ Sure:
       },
     );
 
+    test(
+      'NEW and CONFLICT persist item affect; MERGE keeps target affect',
+      () async {
+        final existing = await memoryRepository.create(
+          scope: MemoryScope.global,
+          type: MemoryType.identity,
+          content: '用户住在上海。',
+          source: MemorySource.manual,
+          valence: 0.1,
+          arousal: 0.2,
+        );
+
+        final neu = await smartAdd.applyDecision(
+          item: const SmartAddItem(
+            type: MemoryType.identity,
+            content: '用户是软件工程师。',
+            scope: MemoryScope.global,
+            valence: -0.6,
+            arousal: 0.9,
+          ),
+          decision: const SmartAddDecision(action: SmartAddAction.neu),
+          candidateIds: const <String>{},
+          source: MemorySource.extracted,
+        );
+        final created = (await chatRepository.memoriesByIds([neu.id!])).single;
+        expect(created.valence, -0.6);
+        expect(created.arousal, 0.9);
+
+        final merged = await smartAdd.applyDecision(
+          item: const SmartAddItem(
+            type: MemoryType.identity,
+            content: 'ignored',
+            scope: MemoryScope.global,
+            valence: 0.9,
+            arousal: 0.9,
+          ),
+          decision: SmartAddDecision(
+            action: SmartAddAction.merge,
+            targetId: existing.id,
+            mergedContent: '用户住在上海，偶尔去杭州。',
+          ),
+          candidateIds: {existing.id},
+          source: MemorySource.extracted,
+        );
+        expect(merged.action, SmartAddAction.merge);
+        final afterMerge = (await chatRepository.memoriesByIds([
+          existing.id,
+        ])).single;
+        expect(afterMerge.valence, 0.1);
+        expect(afterMerge.arousal, 0.2);
+
+        final conflict = await smartAdd.applyDecision(
+          item: const SmartAddItem(
+            type: MemoryType.identity,
+            content: '用户住在北京。',
+            scope: MemoryScope.global,
+            valence: 0.3,
+            arousal: 0.4,
+          ),
+          decision: SmartAddDecision(
+            action: SmartAddAction.conflict,
+            targetId: existing.id,
+          ),
+          candidateIds: {existing.id},
+          source: MemorySource.extracted,
+        );
+        final fresh = (await chatRepository.memoriesByIds([
+          conflict.id!,
+        ])).single;
+        expect(fresh.valence, 0.3);
+        expect(fresh.arousal, 0.4);
+      },
+    );
+
     test('exact duplicate fast-path SKIP without LLM', () async {
       await seedAssistant('a1');
       final e = await memoryRepository.create(

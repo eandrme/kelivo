@@ -73,12 +73,16 @@ class SmartAddItem {
     required this.content,
     required this.scope,
     this.assistantId,
+    this.valence = 0.0,
+    this.arousal = 0.3,
   });
 
   final MemoryType type;
   final String content;
   final MemoryScope scope;
   final String? assistantId;
+  final double valence;
+  final double arousal;
 }
 
 /// Smart Add: candidate retrieval, LLM judge, NEW/MERGE/CONFLICT/SKIP (§12.6).
@@ -446,6 +450,8 @@ class MemorySmartAdd {
           type: item.type,
           content: item.content,
           source: source,
+          valence: item.valence,
+          arousal: item.arousal,
         );
         for (final rid in normalized.relatedIds) {
           await repository.linkBidirectional(created.id, rid);
@@ -506,6 +512,8 @@ class MemorySmartAdd {
           type: item.type,
           content: item.content,
           source: source,
+          valence: item.valence,
+          arousal: item.arousal,
         );
         await repository.linkBidirectional(created.id, oldId);
         for (final rid in normalized.relatedIds) {

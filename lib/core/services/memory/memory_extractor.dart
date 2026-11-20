@@ -8,6 +8,8 @@ class MemoryExtractedItem {
     required this.type,
     required this.content,
     this.scopeAttr,
+    this.valence = 0.0,
+    this.arousal = 0.3,
   });
 
   final MemoryType type;
@@ -16,6 +18,12 @@ class MemoryExtractedItem {
   /// Raw `scope` attribute from the model (`global` / `assistant`), if any.
   /// Only honoured when write policy is `toolDefault*` (§4.3 / §12.5).
   final String? scopeAttr;
+
+  /// Optional emotional colour of this memory, clamped to [-1, 1].
+  final double valence;
+
+  /// Optional emotional intensity of this memory, clamped to [0, 1].
+  final double arousal;
 }
 
 /// Extract parse outcome.
@@ -55,6 +63,14 @@ abstract final class MemoryExtractor {
   );
   static final RegExp _scopeAttrRe = RegExp(
     r'''scope\s*=\s*["'](global|assistant)["']''',
+    caseSensitive: false,
+  );
+  static final RegExp _valenceAttrRe = RegExp(
+    r'''valence\s*=\s*["']([^"']*)["']''',
+    caseSensitive: false,
+  );
+  static final RegExp _arousalAttrRe = RegExp(
+    r'''arousal\s*=\s*["']([^"']*)["']''',
     caseSensitive: false,
   );
 
@@ -135,9 +151,39 @@ abstract final class MemoryExtractor {
           type: type,
           content: body,
           scopeAttr: scopeMatch?.group(1)?.toLowerCase(),
+          valence: _parseAffectAttr(
+            _valenceAttrRe,
+            attrs,
+            fallback: 0.0,
+            min: -1.0,
+            max: 1.0,
+          ),
+          arousal: _parseAffectAttr(
+            _arousalAttrRe,
+            attrs,
+            fallback: 0.3,
+            min: 0.0,
+            max: 1.0,
+          ),
         ),
       );
     }
     return MemoryExtractParseResult.ok(items);
+  }
+
+  /// Parse an optional float attribute; malformed or non-finite values fall
+  /// back to the neutral default, valid numerics clamp to [min, max].
+  static double _parseAffectAttr(
+    RegExp pattern,
+    String attrs, {
+    required double fallback,
+    required double min,
+    required double max,
+  }) {
+    final match = pattern.firstMatch(attrs);
+    if (match == null) return fallback;
+    final parsed = double.tryParse((match.group(1) ?? '').trim());
+    if (parsed == null || !parsed.isFinite) return fallback;
+    return parsed.clamp(min, max).toDouble();
   }
 }

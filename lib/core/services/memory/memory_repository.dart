@@ -14,6 +14,8 @@ class MemoryCreateDraft {
     required this.source,
     this.relatedIds = const <String>[],
     this.migrationId,
+    this.valence = 0.0,
+    this.arousal = 0.3,
   });
 
   final MemoryScope scope;
@@ -23,6 +25,8 @@ class MemoryCreateDraft {
   final MemorySource source;
   final List<String> relatedIds;
   final String? migrationId;
+  final double valence;
+  final double arousal;
 }
 
 class MemoryCreateManyResult {
@@ -67,6 +71,8 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     required String content,
     required MemorySource source,
     List<String> relatedIds = const [],
+    double valence = 0.0,
+    double arousal = 0.3,
   }) {
     return runExclusive(() async {
       _validateScope(scope, assistantId);
@@ -85,6 +91,8 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         relatedIds: List<String>.of(relatedIds),
         createdAt: now,
         updatedAt: now,
+        valence: valence,
+        arousal: arousal,
       );
       all.add(entry);
       await writeAll(all);
@@ -172,6 +180,8 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
               : <String>[migrationId],
           createdAt: now,
           updatedAt: now,
+          valence: draft.valence,
+          arousal: draft.arousal,
         );
         all.add(entry);
         contentIndexes[contentKey] = all.length - 1;

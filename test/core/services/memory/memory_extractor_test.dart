@@ -11,7 +11,7 @@ void main() {
       const raw = '''
 Here you go:
 <extracted>
-<item type="identity">用户是大学生。</item>
+<item type="identity" valence="-0.4" arousal="0.7">用户是大学生。</item>
 <item type="workflow" scope="assistant">用户偏好 Flutter。</item>
 </extracted>
 ''';
@@ -20,7 +20,33 @@ Here you go:
       expect(r.items, hasLength(2));
       expect(r.items[0].type, MemoryType.identity);
       expect(r.items[0].content, '用户是大学生。');
+      expect(r.items[0].valence, -0.4);
+      expect(r.items[0].arousal, 0.7);
       expect(r.items[1].scopeAttr, 'assistant');
+      expect(r.items[1].valence, 0.0);
+      expect(r.items[1].arousal, 0.3);
+    });
+
+    test('parses optional affect attributes and sanitizes bad values', () {
+      const raw = '''
+<extracted>
+<item type='voice' valence='0.25' arousal='0.5'>A</item>
+<item type="voice" valence="9" arousal="-2">B</item>
+<item type="voice" valence="loud" arousal="">C</item>
+<item type="voice">D</item>
+</extracted>
+''';
+      final r = MemoryExtractor.parse(raw);
+      expect(r.ok, isTrue);
+      expect(r.items, hasLength(4));
+      expect(r.items[0].valence, 0.25);
+      expect(r.items[0].arousal, 0.5);
+      expect(r.items[1].valence, 1.0);
+      expect(r.items[1].arousal, 0.0);
+      expect(r.items[2].valence, 0.0);
+      expect(r.items[2].arousal, 0.3);
+      expect(r.items[3].valence, 0.0);
+      expect(r.items[3].arousal, 0.3);
     });
 
     test('empty extracted is ok with zero items', () {
@@ -63,6 +89,13 @@ Here you go:
   });
 
   group('MemoryExtractor.buildPrompt', () {
+    test('extract prompts document optional affect attributes', () {
+      expect(MemoryPrompts.extractZh, contains('valence='));
+      expect(MemoryPrompts.extractZh, contains('arousal='));
+      expect(MemoryPrompts.extractEn, contains('valence='));
+      expect(MemoryPrompts.extractEn, contains('arousal='));
+    });
+
     test('appends toolDefault scope rule', () {
       final prompt = MemoryExtractor.buildPrompt(
         lang: MemoryPromptLang.zh,

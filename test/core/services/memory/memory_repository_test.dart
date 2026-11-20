@@ -204,6 +204,43 @@ void main() {
       );
     });
 
+    test('create and createMany persist valence and arousal', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: 'Affectful memory',
+        source: MemorySource.extracted,
+        valence: -0.4,
+        arousal: 0.8,
+      );
+      expect(created.valence, -0.4);
+      expect(created.arousal, 0.8);
+
+      final reloaded = (await chatRepository.memoriesByIds([
+        created.id,
+      ])).single;
+      expect(reloaded.valence, -0.4);
+      expect(reloaded.arousal, 0.8);
+
+      final result = await memoryRepository.createMany(const [
+        MemoryCreateDraft(
+          scope: MemoryScope.global,
+          type: MemoryType.voice,
+          content: 'Batch affect',
+          source: MemorySource.extracted,
+          valence: 0.7,
+          arousal: 0.2,
+        ),
+      ]);
+      expect(result.created, 1);
+
+      final batch = (await memoryRepository.readAll()).firstWhere(
+        (entry) => entry.content == 'Batch affect',
+      );
+      expect(batch.valence, 0.7);
+      expect(batch.arousal, 0.2);
+    });
+
     test('createMany deduplicates and persists migration receipts', () async {
       final existing = await memoryRepository.create(
         scope: MemoryScope.global,

@@ -425,7 +425,7 @@ void main() {
           if (step == 2) {
             return '''
 <extracted>
-<item type="identity">用户是大学生，学习软件工程。</item>
+<item type="identity" valence="-0.3" arousal="0.6">用户是大学生，学习软件工程。</item>
 </extracted>
 ''';
           }
@@ -447,6 +447,8 @@ void main() {
       );
       expect(entries, isNotEmpty);
       expect(entries.first.source, MemorySource.extracted);
+      expect(entries.first.valence, -0.3);
+      expect(entries.first.arousal, 0.6);
     });
 
     test('user prompt override is used for Gatekeeper', () async {
