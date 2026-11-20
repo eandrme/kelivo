@@ -21,7 +21,22 @@ class MemoryEntry {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const MemoryEntry({
+  /// Emotional valence of the remembered event, from -1 (negative) to 1.
+  final double valence;
+
+  /// Emotional arousal of the remembered event, from 0 (calm) to 1 (intense).
+  final double arousal;
+
+  /// Decayed retention strength, from 0 to 1.
+  final double strength;
+
+  /// Last time [strength] was decayed. Null means decay from [createdAt].
+  final DateTime? lastDecayAt;
+
+  /// Why this entry was archived, e.g. automatic forgetting.
+  final String? archiveReason;
+
+  MemoryEntry({
     required this.id,
     required this.scope,
     this.assistantId,
@@ -33,7 +48,14 @@ class MemoryEntry {
     this.migrationIds = const <String>[],
     required this.createdAt,
     required this.updatedAt,
-  });
+    double valence = 0.0,
+    double arousal = 0.3,
+    double strength = 1.0,
+    this.lastDecayAt,
+    this.archiveReason,
+  }) : valence = _clampDouble(valence, -1.0, 1.0, 0.0),
+       arousal = _clampDouble(arousal, 0.0, 1.0, 0.3),
+       strength = _clampDouble(strength, 0.0, 1.0, 1.0);
 
   MemoryEntry copyWith({
     String? id,
@@ -47,7 +69,14 @@ class MemoryEntry {
     List<String>? migrationIds,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? valence,
+    double? arousal,
+    double? strength,
+    DateTime? lastDecayAt,
+    String? archiveReason,
     bool clearAssistantId = false,
+    bool clearLastDecayAt = false,
+    bool clearArchiveReason = false,
   }) => MemoryEntry(
     id: id ?? this.id,
     scope: scope ?? this.scope,
@@ -60,6 +89,13 @@ class MemoryEntry {
     migrationIds: migrationIds ?? this.migrationIds,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    valence: valence ?? this.valence,
+    arousal: arousal ?? this.arousal,
+    strength: strength ?? this.strength,
+    lastDecayAt: clearLastDecayAt ? null : (lastDecayAt ?? this.lastDecayAt),
+    archiveReason: clearArchiveReason
+        ? null
+        : (archiveReason ?? this.archiveReason),
   );
 
   Map<String, dynamic> toPayload() => {
@@ -74,6 +110,11 @@ class MemoryEntry {
     if (migrationIds.isNotEmpty) 'migrationIds': migrationIds,
     'createdAt': createdAt.microsecondsSinceEpoch,
     'updatedAt': updatedAt.microsecondsSinceEpoch,
+    'valence': valence,
+    'arousal': arousal,
+    'strength': strength,
+    'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
+    'archiveReason': archiveReason,
   };
 
   static MemoryEntry fromPayload(Map<String, dynamic> json) {
@@ -96,7 +137,36 @@ class MemoryEntry {
       updatedAt: DateTime.fromMicrosecondsSinceEpoch(
         (json['updatedAt'] as num).toInt(),
       ),
+      valence: _readDouble(json['valence'], 0.0),
+      arousal: _readDouble(json['arousal'], 0.3),
+      strength: _readDouble(json['strength'], 1.0),
+      lastDecayAt: _readDateTime(json['lastDecayAt']),
+      archiveReason: json['archiveReason'] is String
+          ? json['archiveReason'] as String
+          : null,
     );
+  }
+
+  static double _clampDouble(
+    double value,
+    double min,
+    double max,
+    double fallback,
+  ) {
+    if (!value.isFinite) return fallback;
+    return value.clamp(min, max).toDouble();
+  }
+
+  static double _readDouble(Object? value, double fallback) {
+    if (value is num && value.isFinite) return value.toDouble();
+    return fallback;
+  }
+
+  static DateTime? _readDateTime(Object? value) {
+    if (value is num) {
+      return DateTime.fromMicrosecondsSinceEpoch(value.toInt());
+    }
+    return null;
   }
 
   /// Trim, collapse every whitespace run to a single space, then lowercase.
