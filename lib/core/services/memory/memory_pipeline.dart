@@ -16,6 +16,7 @@ import '../api/chat_api_service.dart';
 import '../chat/chat_service.dart';
 import 'memory_block_builder.dart';
 import 'memory_extractor.dart';
+import 'memory_forgetting_service.dart';
 import 'memory_gatekeeper.dart';
 import 'memory_profile_distiller.dart';
 import 'memory_prompts.dart';
@@ -97,7 +98,8 @@ class MemoryPipelineService {
        distiller = MemoryProfileDistiller(
          repository: repository,
          chatRepository: chatRepository,
-       );
+       ),
+       forgetting = MemoryForgettingService(repository: repository);
 
   static Future<String> _defaultGenerateText({
     required ProviderConfig config,
@@ -120,6 +122,7 @@ class MemoryPipelineService {
   final ChatDatabaseRepository chatRepository;
   final MemorySmartAdd smartAdd;
   final MemoryProfileDistiller distiller;
+  final MemoryForgettingService forgetting;
 
   /// Collects step-by-step traces of every background run (§debug viewer).
   final MemoryTraceRecorder traceRecorder;
@@ -824,6 +827,7 @@ class MemoryPipelineService {
     // Smart Add (including degraded) and Distiller failure both advance (§12.8).
     await _advance(conversationId, windowEnd);
     _windowFailures.remove(failureKey);
+    await _previewForgetting();
     return MemoryOrganizeResult(
       advanced: true,
       gate: gate,
@@ -835,6 +839,15 @@ class MemoryPipelineService {
   /// Record a stage the run never reached, so the viewer shows the full chain.
   void _skipStep(MemoryTraceHandle? handle, MemoryTraceStepKind kind) {
     handle?.beginStep(kind)?.finish(MemoryTraceStepStatus.skipped);
+  }
+
+  Future<void> _previewForgetting() async {
+    try {
+      final report = await forgetting.preview();
+      debugPrint('MemoryForgettingService ${report.summary}');
+    } catch (e) {
+      debugPrint('MemoryForgettingService preview failed: $e');
+    }
   }
 
   static const List<MemoryTraceStepKind> _organizeStages = [

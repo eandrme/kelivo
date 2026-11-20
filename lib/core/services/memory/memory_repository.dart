@@ -264,23 +264,85 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
 
   /// Soft-delete (model `memory_delete` / CONFLICT). Also strips reverse
   /// `relatedIds` references from every other entry in the same write (D-25).
-  Future<bool> archive(String id) {
+  ///
+  /// [reason] is stored for automatic forgetting; manual archives leave it
+  /// null.
+  Future<bool> archive(String id, {String? reason}) {
     return runExclusive(() async {
       final all = await readAll();
       final index = all.indexWhere((entry) => entry.id == id);
       if (index == -1) return false;
       if (all[index].status == MemoryStatus.archived) {
+        if (reason != null && all[index].archiveReason != reason) {
+          all[index] = all[index].copyWith(archiveReason: reason);
+        }
         _stripReverseRelatedIds(all, id);
         await writeAll(all);
         return true;
       }
       all[index] = all[index].copyWith(
         status: MemoryStatus.archived,
+        archiveReason: reason,
+        clearArchiveReason: reason == null,
         updatedAt: DateTime.now().toUtc(),
       );
       _stripReverseRelatedIds(all, id);
       await writeAll(all);
       return true;
+    });
+  }
+
+  /// Archives [ids] in one write, optionally stamping [reason]. Entries that
+  /// are already archived are left untouched.
+  Future<int> archiveMany(Iterable<String> ids, {String? reason}) {
+    return runExclusive(() async {
+      final targets = ids.toSet();
+      if (targets.isEmpty) return 0;
+      final all = await readAll();
+      var changed = 0;
+      final now = DateTime.now().toUtc();
+      for (var i = 0; i < all.length; i++) {
+        final entry = all[i];
+        if (entry.status == MemoryStatus.archived ||
+            !targets.contains(entry.id)) {
+          continue;
+        }
+        all[i] = entry.copyWith(
+          status: MemoryStatus.archived,
+          archiveReason: reason,
+          clearArchiveReason: reason == null,
+          updatedAt: now,
+        );
+        changed++;
+      }
+      if (changed == 0) return 0;
+      for (final id in targets) {
+        _stripReverseRelatedIds(all, id);
+      }
+      await writeAll(all);
+      return changed;
+    });
+  }
+
+  /// Persists decayed strengths and one shared [decayedAt] timestamp in a
+  /// single write. Archived entries are ignored.
+  Future<int> updateForgettingStrengths(
+    Map<String, double> strengths, {
+    required DateTime decayedAt,
+  }) {
+    return runExclusive(() async {
+      if (strengths.isEmpty) return 0;
+      final all = await readAll();
+      var changed = 0;
+      for (var i = 0; i < all.length; i++) {
+        final entry = all[i];
+        final strength = strengths[entry.id];
+        if (strength == null || entry.status != MemoryStatus.active) continue;
+        all[i] = entry.copyWith(strength: strength, lastDecayAt: decayedAt);
+        changed++;
+      }
+      if (changed > 0) await writeAll(all);
+      return changed;
     });
   }
 
@@ -292,6 +354,9 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
       if (all[index].status == MemoryStatus.active) return true;
       all[index] = all[index].copyWith(
         status: MemoryStatus.active,
+        strength: 1.0,
+        clearLastDecayAt: true,
+        clearArchiveReason: true,
         updatedAt: DateTime.now().toUtc(),
       );
       await writeAll(all);

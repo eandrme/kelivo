@@ -131,7 +131,10 @@ void main() {
       );
       await memoryRepository.linkBidirectional(a.id, b.id);
 
-      final ok = await memoryRepository.archive(b.id);
+      final ok = await memoryRepository.archive(
+        b.id,
+        reason: 'forgetting:test',
+      );
       expect(ok, isTrue);
 
       final kept = (await chatRepository.memoriesByIds([a.id])).single;
@@ -140,7 +143,53 @@ void main() {
 
       final archived = (await chatRepository.memoriesByIds([b.id])).single;
       expect(archived.status, MemoryStatus.archived);
+      expect(archived.archiveReason, 'forgetting:test');
     });
+
+    test(
+      'archiveMany archives a batch and strips reverse relatedIds',
+      () async {
+        final a = await memoryRepository.create(
+          scope: MemoryScope.global,
+          type: MemoryType.voice,
+          content: 'Survivor',
+          source: MemorySource.manual,
+        );
+        final b = await memoryRepository.create(
+          scope: MemoryScope.global,
+          type: MemoryType.workflow,
+          content: 'Archive B',
+          source: MemorySource.manual,
+          relatedIds: [a.id],
+        );
+        final c = await memoryRepository.create(
+          scope: MemoryScope.global,
+          type: MemoryType.workflow,
+          content: 'Archive C',
+          source: MemorySource.manual,
+          relatedIds: [b.id],
+        );
+        await memoryRepository.linkBidirectional(a.id, b.id);
+        await memoryRepository.linkBidirectional(b.id, c.id);
+
+        final count = await memoryRepository.archiveMany([
+          b.id,
+          c.id,
+        ], reason: 'forgetting:test');
+        expect(count, 2);
+
+        final loaded = await chatRepository.memoriesByIds([a.id, b.id, c.id]);
+        final byId = {for (final entry in loaded) entry.id: entry};
+        expect(byId[a.id]!.status, MemoryStatus.active);
+        expect(byId[a.id]!.relatedIds, isEmpty);
+        expect(byId[b.id]!.status, MemoryStatus.archived);
+        expect(byId[b.id]!.archiveReason, 'forgetting:test');
+        expect(byId[b.id]!.relatedIds, [a.id]);
+        expect(byId[c.id]!.status, MemoryStatus.archived);
+        expect(byId[c.id]!.archiveReason, 'forgetting:test');
+        expect(byId[c.id]!.relatedIds, isEmpty);
+      },
+    );
 
     test('hardDelete strips reverse relatedIds', () async {
       final a = await memoryRepository.create(

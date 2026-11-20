@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../database/chat_database_repository.dart';
 import '../models/memory_entry.dart';
 import '../models/user_profile_field.dart';
+import '../services/memory/memory_forgetting_service.dart';
 import '../services/memory/memory_repository.dart';
 
 /// UI-facing ChangeNotifier for memory system V1 (§13.7).
@@ -11,10 +12,12 @@ import '../services/memory/memory_repository.dart';
 /// read-only store for §14.5. Mixing the two via `context.read` would silently
 /// wire the wrong system.
 class MemoryProviderV2 extends ChangeNotifier {
-  MemoryProviderV2({required this.repository, required this.chatRepository});
+  MemoryProviderV2({required this.repository, required this.chatRepository})
+    : forgetting = MemoryForgettingService(repository: repository);
 
   final MemoryRepository repository;
   final ChatDatabaseRepository chatRepository;
+  final MemoryForgettingService forgetting;
 
   List<MemoryEntry> _entries = const <MemoryEntry>[];
   List<UserProfileField> _profileFields = const <UserProfileField>[];
@@ -23,6 +26,7 @@ class MemoryProviderV2 extends ChangeNotifier {
   bool _loadAll = false;
   bool _initialized = false;
   Future<void>? _initializationFuture;
+  bool _forgettingPreviewed = false;
 
   /// Full cached entry list from the last [refresh] / [refreshAll].
   List<MemoryEntry> get entries => List<MemoryEntry>.unmodifiable(_entries);
@@ -102,6 +106,7 @@ class MemoryProviderV2 extends ChangeNotifier {
       _orphanCount = 0;
       notifyListeners();
     }
+    await _previewForgettingOnce();
   }
 
   /// Convenience for the global management UI (§14.4).
@@ -240,6 +245,17 @@ class MemoryProviderV2 extends ChangeNotifier {
   }
 
   Future<void> _refreshAfterWrite() => reloadCurrentScope();
+
+  Future<void> _previewForgettingOnce() async {
+    if (_forgettingPreviewed) return;
+    _forgettingPreviewed = true;
+    try {
+      final report = await forgetting.preview();
+      debugPrint('MemoryForgettingService ${report.summary}');
+    } catch (e) {
+      debugPrint('MemoryForgettingService preview failed: $e');
+    }
+  }
 
   static bool _isVisible(MemoryEntry entry, String? assistantId) {
     if (entry.scope == MemoryScope.global) return true;
