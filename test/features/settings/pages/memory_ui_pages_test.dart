@@ -137,6 +137,7 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
     expect(find.text('V'), findsWidgets);
     expect(find.text('A'), findsWidgets);
+    expect(find.text('I'), findsWidgets);
     expect(find.text('S'), findsWidgets);
   });
 

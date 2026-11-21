@@ -1607,6 +1607,11 @@ class MemoryAffectStats extends StatelessWidget {
           color: cs.tertiary,
         ),
         _MetricPill(
+          label: 'I',
+          value: entry.importance.toStringAsFixed(2),
+          color: cs.secondary,
+        ),
+        _MetricPill(
           label: 'S',
           value: '${(entry.strength * 100).round()}%',
           color: strengthColor,

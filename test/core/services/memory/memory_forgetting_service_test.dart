@@ -45,6 +45,7 @@ void main() {
     MemoryStatus status = MemoryStatus.active,
     double valence = 0.0,
     double arousal = 0.3,
+    double importance = 0.0,
     double strength = 1.0,
     DateTime? createdAt,
     DateTime? lastDecayAt,
@@ -76,6 +77,7 @@ void main() {
       'updatedAt': created.microsecondsSinceEpoch,
       'valence': valence,
       'arousal': arousal,
+      'importance': importance,
       'strength': strength,
       'lastDecayAt': effectiveLastDecayAt?.microsecondsSinceEpoch,
       'archiveReason': archiveReason,
@@ -276,6 +278,35 @@ void main() {
     final untouched = entries.firstWhere((entry) => entry.id == 'mem_b0000001');
     expect(untouched.status, MemoryStatus.active);
     expect(untouched.strength, 0.1);
+  });
+
+  test('higher importance slows decay', () async {
+    await putEntry(
+      id: 'mem_lowimp01',
+      content: 'Low importance',
+      createdAt: now.subtract(const Duration(days: 10)),
+      strength: 0.4,
+      importance: 0.0,
+    );
+    await putEntry(
+      id: 'mem_highimp1',
+      content: 'High importance',
+      createdAt: now.subtract(const Duration(days: 10)),
+      strength: 0.4,
+      importance: 1.0,
+    );
+
+    final report = await service(dryRun: false).apply();
+    expect(report.archiveIds, ['mem_lowimp01']);
+
+    final entries = await memoryRepository.readAll();
+    final low = entries.firstWhere((entry) => entry.id == 'mem_lowimp01');
+    final high = entries.firstWhere((entry) => entry.id == 'mem_highimp1');
+    expect(low.status, MemoryStatus.archived);
+    expect(high.status, MemoryStatus.active);
+    expect(low.strength, closeTo(0.2946, 0.001));
+    expect(high.strength, closeTo(0.3434, 0.001));
+    expect(high.strength, greaterThan(low.strength));
   });
 
   test('pinned entries are skipped by decay and archiving', () async {

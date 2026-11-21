@@ -143,7 +143,8 @@ class MemoryForgettingService {
       final tau =
           baseTauDays *
           (1 + 0.5 * max(0.0, -entry.valence)) *
-          (1 + 0.3 * entry.arousal);
+          (1 + 0.3 * entry.arousal) *
+          (1 + entry.importance);
       final lastDecayAt = entry.lastDecayAt;
       final nextStrength = lastDecayAt == null
           ? entry.strength

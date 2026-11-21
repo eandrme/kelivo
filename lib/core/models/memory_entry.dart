@@ -27,6 +27,9 @@ class MemoryEntry {
   /// Emotional arousal of the remembered event, from 0 (calm) to 1 (intense).
   final double arousal;
 
+  /// How important this memory is to keep, from 0 to 1. Higher slows decay.
+  final double importance;
+
   /// Decayed retention strength, from 0 to 1.
   final double strength;
 
@@ -53,12 +56,14 @@ class MemoryEntry {
     required this.updatedAt,
     double valence = 0.0,
     double arousal = 0.3,
+    double importance = 0.0,
     double strength = 1.0,
     this.lastDecayAt,
     this.archiveReason,
     this.pinned = false,
   }) : valence = _clampDouble(valence, -1.0, 1.0, 0.0),
        arousal = _clampDouble(arousal, 0.0, 1.0, 0.3),
+       importance = _clampDouble(importance, 0.0, 1.0, 0.0),
        strength = _clampDouble(strength, 0.0, 1.0, 1.0);
 
   MemoryEntry copyWith({
@@ -75,6 +80,7 @@ class MemoryEntry {
     DateTime? updatedAt,
     double? valence,
     double? arousal,
+    double? importance,
     double? strength,
     DateTime? lastDecayAt,
     String? archiveReason,
@@ -96,6 +102,7 @@ class MemoryEntry {
     updatedAt: updatedAt ?? this.updatedAt,
     valence: valence ?? this.valence,
     arousal: arousal ?? this.arousal,
+    importance: importance ?? this.importance,
     strength: strength ?? this.strength,
     lastDecayAt: clearLastDecayAt ? null : (lastDecayAt ?? this.lastDecayAt),
     archiveReason: clearArchiveReason
@@ -118,6 +125,7 @@ class MemoryEntry {
     'updatedAt': updatedAt.microsecondsSinceEpoch,
     'valence': valence,
     'arousal': arousal,
+    'importance': importance,
     'strength': strength,
     'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
     'archiveReason': archiveReason,
@@ -146,6 +154,7 @@ class MemoryEntry {
       ),
       valence: _readDouble(json['valence'], 0.0),
       arousal: _readDouble(json['arousal'], 0.3),
+      importance: _readDouble(json['importance'], 0.0),
       strength: _readDouble(json['strength'], 1.0),
       lastDecayAt: _readDateTime(json['lastDecayAt']),
       archiveReason: json['archiveReason'] is String

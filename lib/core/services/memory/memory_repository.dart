@@ -16,6 +16,7 @@ class MemoryCreateDraft {
     this.migrationId,
     this.valence = 0.0,
     this.arousal = 0.3,
+    this.importance = 0.0,
     this.pinned = false,
   });
 
@@ -28,6 +29,7 @@ class MemoryCreateDraft {
   final String? migrationId;
   final double valence;
   final double arousal;
+  final double importance;
   final bool pinned;
 }
 
@@ -75,6 +77,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     List<String> relatedIds = const [],
     double valence = 0.0,
     double arousal = 0.3,
+    double importance = 0.0,
     bool pinned = false,
   }) {
     return runExclusive(() async {
@@ -96,6 +99,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         updatedAt: now,
         valence: valence,
         arousal: arousal,
+        importance: importance,
         pinned: pinned,
       );
       all.add(entry);
@@ -186,6 +190,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
           updatedAt: now,
           valence: draft.valence,
           arousal: draft.arousal,
+          importance: draft.importance,
           pinned: draft.pinned,
         );
         all.add(entry);
@@ -224,6 +229,20 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         type: type,
         updatedAt: DateTime.now().toUtc(),
       );
+      all[index] = updated;
+      await writeAll(all);
+      return updated;
+    });
+  }
+
+  /// Updates importance without touching content dates.
+  Future<MemoryEntry?> setImportance(String id, double importance) {
+    return runExclusive(() async {
+      final all = await readAll();
+      final index = all.indexWhere((entry) => entry.id == id);
+      if (index == -1) return null;
+      final updated = all[index].copyWith(importance: importance);
+      if (updated.importance == all[index].importance) return updated;
       all[index] = updated;
       await writeAll(all);
       return updated;

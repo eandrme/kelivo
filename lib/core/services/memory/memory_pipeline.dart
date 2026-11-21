@@ -774,6 +774,7 @@ class MemoryPipelineService {
             assistantId: scope == MemoryScope.assistant ? assistant.id : null,
             valence: item.valence,
             arousal: item.arousal,
+            importance: item.importance,
             pinned: item.pinned,
           );
         }(),

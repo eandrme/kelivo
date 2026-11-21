@@ -403,6 +403,50 @@ Sure:
       expect(afterMerge.pinned, isTrue);
     });
 
+    test('NEW keeps importance and MERGE raises it to the max', () async {
+      final existing = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.identity,
+        content: '用户住在上海。',
+        source: MemorySource.manual,
+        importance: 0.2,
+      );
+
+      final neu = await smartAdd.applyDecision(
+        item: const SmartAddItem(
+          type: MemoryType.identity,
+          content: '用户是软件工程师。',
+          scope: MemoryScope.global,
+          importance: 0.8,
+        ),
+        decision: const SmartAddDecision(action: SmartAddAction.neu),
+        candidateIds: const <String>{},
+        source: MemorySource.extracted,
+      );
+      final created = (await chatRepository.memoriesByIds([neu.id!])).single;
+      expect(created.importance, 0.8);
+
+      await smartAdd.applyDecision(
+        item: const SmartAddItem(
+          type: MemoryType.identity,
+          content: 'ignored',
+          scope: MemoryScope.global,
+          importance: 0.9,
+        ),
+        decision: SmartAddDecision(
+          action: SmartAddAction.merge,
+          targetId: existing.id,
+          mergedContent: '用户住在上海，偶尔去杭州。',
+        ),
+        candidateIds: {existing.id},
+        source: MemorySource.extracted,
+      );
+      final afterMerge = (await chatRepository.memoriesByIds([
+        existing.id,
+      ])).single;
+      expect(afterMerge.importance, 0.9);
+    });
+
     test('exact duplicate fast-path SKIP without LLM', () async {
       await seedAssistant('a1');
       final e = await memoryRepository.create(

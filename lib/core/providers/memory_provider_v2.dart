@@ -206,6 +206,12 @@ class MemoryProviderV2 extends ChangeNotifier {
     return entry;
   }
 
+  Future<MemoryEntry?> setImportance(String id, double importance) async {
+    final entry = await repository.setImportance(id, importance);
+    await _refreshAfterWrite();
+    return entry;
+  }
+
   Future<bool> restore(String id) async {
     final ok = await repository.restore(id);
     await _refreshAfterWrite();

@@ -39,6 +39,7 @@ void main() {
       expect(payload['source'], 'extracted');
       expect(payload['valence'], 0.0);
       expect(payload['arousal'], 0.3);
+      expect(payload['importance'], 0.0);
       expect(payload['strength'], 1.0);
       expect(payload, contains('lastDecayAt'));
       expect(payload['lastDecayAt'], isNull);
@@ -55,6 +56,7 @@ void main() {
       expect(roundTrip.migrationIds, entry.migrationIds);
       expect(roundTrip.valence, 0.0);
       expect(roundTrip.arousal, 0.3);
+      expect(roundTrip.importance, 0.0);
       expect(roundTrip.strength, 1.0);
       expect(roundTrip.lastDecayAt, isNull);
       expect(roundTrip.archiveReason, isNull);
@@ -79,6 +81,7 @@ void main() {
     MemoryEntry build({
       double valence = 0.0,
       double arousal = 0.3,
+      double importance = 0.0,
       double strength = 1.0,
       DateTime? lastDecayAt,
       String? archiveReason,
@@ -91,6 +94,7 @@ void main() {
       source: MemorySource.extracted,
       valence: valence,
       arousal: arousal,
+      importance: importance,
       strength: strength,
       lastDecayAt: lastDecayAt,
       archiveReason: archiveReason,
@@ -115,6 +119,7 @@ void main() {
 
       expect(entry.valence, 0.0);
       expect(entry.arousal, 0.3);
+      expect(entry.importance, 0.0);
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
@@ -126,6 +131,7 @@ void main() {
       final entry = build(
         valence: -0.6,
         arousal: 0.8,
+        importance: 0.7,
         strength: 0.42,
         lastDecayAt: lastDecayAt,
         archiveReason: 'forgetting:strength<0.3',
@@ -138,6 +144,7 @@ void main() {
 
       expect(restored.valence, -0.6);
       expect(restored.arousal, 0.8);
+      expect(restored.importance, 0.7);
       expect(restored.strength, 0.42);
       expect(
         restored.lastDecayAt!.microsecondsSinceEpoch,
@@ -150,29 +157,39 @@ void main() {
     test(
       'out-of-range values are clamped on construction and payload read',
       () {
-        final entry = build(valence: -4.0, arousal: 9.0, strength: -2.0);
+        final entry = build(
+          valence: -4.0,
+          arousal: 9.0,
+          importance: 9.0,
+          strength: -2.0,
+        );
         expect(entry.valence, -1.0);
         expect(entry.arousal, 1.0);
+        expect(entry.importance, 1.0);
         expect(entry.strength, 0.0);
 
         final copied = build().copyWith(
           valence: 2.0,
           arousal: -1.0,
+          importance: -1.0,
           strength: 5.0,
         );
         expect(copied.valence, 1.0);
         expect(copied.arousal, 0.0);
+        expect(copied.importance, 0.0);
         expect(copied.strength, 1.0);
 
         final payload = <String, dynamic>{
           ...build().toPayload(),
           'valence': 3.5,
           'arousal': -1.0,
+          'importance': 3.0,
           'strength': 2.0,
         };
         final restored = MemoryEntry.fromPayload(payload);
         expect(restored.valence, 1.0);
         expect(restored.arousal, 0.0);
+        expect(restored.importance, 1.0);
         expect(restored.strength, 1.0);
       },
     );
@@ -182,6 +199,7 @@ void main() {
         ...build().toPayload(),
         'valence': double.nan,
         'arousal': 'calm',
+        'importance': 'high',
         'strength': double.infinity,
         'lastDecayAt': 'not-a-number',
         'archiveReason': 42,
@@ -191,6 +209,7 @@ void main() {
 
       expect(entry.valence, 0.0);
       expect(entry.arousal, 0.3);
+      expect(entry.importance, 0.0);
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
@@ -202,6 +221,7 @@ void main() {
       final entry = build(
         valence: 0.5,
         arousal: 0.6,
+        importance: 0.8,
         strength: 0.7,
         lastDecayAt: lastDecayAt,
         archiveReason: 'manual',
@@ -212,6 +232,7 @@ void main() {
       expect(updated.content, '更新后的内容');
       expect(updated.valence, 0.5);
       expect(updated.arousal, 0.6);
+      expect(updated.importance, 0.8);
       expect(updated.strength, 0.7);
       expect(updated.lastDecayAt, lastDecayAt);
       expect(updated.archiveReason, 'manual');
@@ -225,9 +246,11 @@ void main() {
       expect(cleared.archiveReason, isNull);
       expect(cleared.valence, 0.5);
       expect(cleared.arousal, 0.6);
+      expect(cleared.importance, 0.8);
       expect(cleared.strength, 0.7);
       expect(cleared.pinned, isTrue);
       expect(cleared.copyWith(pinned: false).pinned, isFalse);
+      expect(cleared.copyWith(importance: 0.2).importance, 0.2);
     });
   });
 

@@ -320,6 +320,36 @@ void main() {
       expect(batch.pinned, isTrue);
     });
 
+    test('create and createMany persist importance', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: 'Important memory',
+        source: MemorySource.extracted,
+        importance: 0.8,
+      );
+      expect(created.importance, 0.8);
+      expect((await memoryRepository.readAll()).single.importance, 0.8);
+
+      final updated = await memoryRepository.setImportance(created.id, 0.2);
+      expect(updated?.importance, 0.2);
+      expect((await memoryRepository.readAll()).single.importance, 0.2);
+
+      await memoryRepository.createMany(const [
+        MemoryCreateDraft(
+          scope: MemoryScope.global,
+          type: MemoryType.voice,
+          content: 'Important batch',
+          source: MemorySource.extracted,
+          importance: 0.6,
+        ),
+      ]);
+      final batch = (await memoryRepository.readAll()).firstWhere(
+        (entry) => entry.content == 'Important batch',
+      );
+      expect(batch.importance, 0.6);
+    });
+
     test('createMany deduplicates and persists migration receipts', () async {
       final existing = await memoryRepository.create(
         scope: MemoryScope.global,

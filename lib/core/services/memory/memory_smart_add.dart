@@ -75,6 +75,7 @@ class SmartAddItem {
     this.assistantId,
     this.valence = 0.0,
     this.arousal = 0.3,
+    this.importance = 0.0,
     this.pinned = false,
   });
 
@@ -84,6 +85,7 @@ class SmartAddItem {
   final String? assistantId;
   final double valence;
   final double arousal;
+  final double importance;
   final bool pinned;
 }
 
@@ -454,6 +456,7 @@ class MemorySmartAdd {
           source: source,
           valence: item.valence,
           arousal: item.arousal,
+          importance: item.importance,
           pinned: item.pinned,
         );
         for (final rid in normalized.relatedIds) {
@@ -492,6 +495,9 @@ class MemorySmartAdd {
         if (item.pinned && updated != null && !updated.pinned) {
           updated = await repository.setPinned(updated.id, true);
         }
+        if (updated != null && item.importance > updated.importance) {
+          updated = await repository.setImportance(updated.id, item.importance);
+        }
         traceStep?.addMutation(
           MemoryTraceMutation(
             kind: MemoryTraceMutationKind.memoryMerged,
@@ -520,6 +526,7 @@ class MemorySmartAdd {
           source: source,
           valence: item.valence,
           arousal: item.arousal,
+          importance: item.importance,
           pinned: item.pinned,
         );
         await repository.linkBidirectional(created.id, oldId);
