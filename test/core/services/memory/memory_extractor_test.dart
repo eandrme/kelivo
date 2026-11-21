@@ -24,11 +24,13 @@ Here you go:
       expect(r.items[0].arousal, 0.7);
       expect(r.items[0].importance, 0.8);
       expect(r.items[0].pinned, isTrue);
+      expect(r.items[0].hasAffect, isTrue);
       expect(r.items[1].scopeAttr, 'assistant');
       expect(r.items[1].valence, 0.0);
       expect(r.items[1].arousal, 0.3);
       expect(r.items[1].importance, 0.0);
       expect(r.items[1].pinned, isFalse);
+      expect(r.items[1].hasAffect, isFalse);
     });
 
     test('only true-like pinned attributes pin the item', () {
@@ -60,15 +62,19 @@ Here you go:
       expect(r.items[0].valence, 0.25);
       expect(r.items[0].arousal, 0.5);
       expect(r.items[0].importance, 0.6);
+      expect(r.items[0].hasAffect, isTrue);
       expect(r.items[1].valence, 1.0);
       expect(r.items[1].arousal, 0.0);
       expect(r.items[1].importance, 1.0);
+      expect(r.items[1].hasAffect, isTrue);
       expect(r.items[2].valence, 0.0);
       expect(r.items[2].arousal, 0.3);
       expect(r.items[2].importance, 0.0);
+      expect(r.items[2].hasAffect, isTrue);
       expect(r.items[3].valence, 0.0);
       expect(r.items[3].arousal, 0.3);
       expect(r.items[3].importance, 0.0);
+      expect(r.items[3].hasAffect, isFalse);
     });
 
     test('empty extracted is ok with zero items', () {

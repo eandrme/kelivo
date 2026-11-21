@@ -178,6 +178,7 @@ Output format (follow this XML exactly, no extra text):
 - 每条可带可选的情绪属性：valence（-1 很负面，0 中性，1 很正面）和 arousal（0 平静，1 强烈）；它们描述这条记忆的情绪色彩，不是用户当前情绪，不确定时省略，系统默认中性
 - 只有当用户明确要求长期记住、不要忘记，或这条信息明显必须长期保留时，才加 pinned="true"；不要给每条都加
 - 可选 importance（0 到 1）表示长期保留价值：0 不重要，1 非常重要；只根据上下文判断，不要都给高分
+- 如果新对话改变了某条已有记忆的情绪色彩，可以再次输出这条信息并带上新的 valence/arousal；系统会合并并更新情绪色彩，不要只为了改情绪而重复无关信息
 
 ## 已有记忆
 {{existingMemory}}
@@ -215,6 +216,7 @@ Rules:
 - Each item may carry optional emotional attributes: valence (-1 negative, 0 neutral, 1 positive) and arousal (0 calm, 1 intense). They describe the emotional colour of this memory, not the user's current mood. Omit them when unsure; the system defaults to neutral.
 - Add pinned="true" only when the user explicitly asks to remember something long term or not to forget it, or when the information clearly must be kept indefinitely. Do not pin every item.
 - Optional importance (0 to 1) is the long-term value of this memory: 0 not important, 1 very important. Judge from context; do not give every item a high score.
+- If a new conversation changes the emotional tone of an existing memory, you may emit that fact again with new valence/arousal; the system merges and updates the affect. Do not repeat unrelated facts just to change affect.
 
 ## Existing memory
 {{existingMemory}}

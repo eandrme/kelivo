@@ -309,6 +309,25 @@ void main() {
     expect(high.strength, greaterThan(low.strength));
   });
 
+  test('V/A drift back toward neutral over time', () async {
+    await putEntry(
+      id: 'mem_affect01',
+      content: 'Strong affect',
+      createdAt: now.subtract(const Duration(days: 60)),
+      strength: 0.9,
+      valence: -1.0,
+      arousal: 1.0,
+    );
+
+    await service(dryRun: false).apply();
+
+    final entry = (await memoryRepository.readAll()).firstWhere(
+      (item) => item.id == 'mem_affect01',
+    );
+    expect(entry.valence, closeTo(-0.3679, 0.001));
+    expect(entry.arousal, closeTo(0.5575, 0.001));
+  });
+
   test('pinned entries are skipped by decay and archiving', () async {
     await putEntry(
       id: 'mem_pinned01',

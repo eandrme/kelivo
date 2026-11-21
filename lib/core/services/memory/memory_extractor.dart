@@ -12,6 +12,7 @@ class MemoryExtractedItem {
     this.arousal = 0.3,
     this.importance = 0.0,
     this.pinned = false,
+    this.hasAffect = false,
   });
 
   final MemoryType type;
@@ -32,6 +33,9 @@ class MemoryExtractedItem {
 
   /// Optional explicit request to keep this memory out of automatic decay.
   final bool pinned;
+
+  /// True when the model actually supplied valence/arousal attributes.
+  final bool hasAffect;
 }
 
 /// Extract parse outcome.
@@ -189,6 +193,8 @@ abstract final class MemoryExtractor {
             max: 1.0,
           ),
           pinned: _pinnedAttrRe.hasMatch(attrs),
+          hasAffect:
+              _valenceAttrRe.hasMatch(attrs) || _arousalAttrRe.hasMatch(attrs),
         ),
       );
     }

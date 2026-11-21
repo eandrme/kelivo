@@ -77,6 +77,7 @@ class SmartAddItem {
     this.arousal = 0.3,
     this.importance = 0.0,
     this.pinned = false,
+    this.hasAffect = false,
   });
 
   final MemoryType type;
@@ -87,6 +88,9 @@ class SmartAddItem {
   final double arousal;
   final double importance;
   final bool pinned;
+
+  /// True when the source item actually supplied V/A attributes.
+  final bool hasAffect;
 }
 
 /// Smart Add: candidate retrieval, LLM judge, NEW/MERGE/CONFLICT/SKIP (§12.6).
@@ -497,6 +501,13 @@ class MemorySmartAdd {
         }
         if (updated != null && item.importance > updated.importance) {
           updated = await repository.setImportance(updated.id, item.importance);
+        }
+        if (item.hasAffect && updated != null) {
+          updated = await repository.updateAffect(
+            updated.id,
+            valence: updated.valence * 0.7 + item.valence * 0.3,
+            arousal: updated.arousal * 0.7 + item.arousal * 0.3,
+          );
         }
         traceStep?.addMutation(
           MemoryTraceMutation(

@@ -776,6 +776,7 @@ class MemoryPipelineService {
             arousal: item.arousal,
             importance: item.importance,
             pinned: item.pinned,
+            hasAffect: item.hasAffect,
           );
         }(),
     ];

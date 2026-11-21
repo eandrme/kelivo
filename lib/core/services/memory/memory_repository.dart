@@ -235,6 +235,27 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     });
   }
 
+  /// Updates valence/arousal without touching content dates.
+  Future<MemoryEntry?> updateAffect(
+    String id, {
+    required double valence,
+    required double arousal,
+  }) {
+    return runExclusive(() async {
+      final all = await readAll();
+      final index = all.indexWhere((entry) => entry.id == id);
+      if (index == -1) return null;
+      final updated = all[index].copyWith(valence: valence, arousal: arousal);
+      if (updated.valence == all[index].valence &&
+          updated.arousal == all[index].arousal) {
+        return updated;
+      }
+      all[index] = updated;
+      await writeAll(all);
+      return updated;
+    });
+  }
+
   /// Updates importance without touching content dates.
   Future<MemoryEntry?> setImportance(String id, double importance) {
     return runExclusive(() async {
@@ -401,6 +422,8 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
   Future<int> updateForgettingStrengths(
     Map<String, double> strengths, {
     required DateTime decayedAt,
+    Map<String, double> valences = const {},
+    Map<String, double> arousals = const {},
   }) {
     return runExclusive(() async {
       if (strengths.isEmpty) return 0;
@@ -410,7 +433,12 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         final entry = all[i];
         final strength = strengths[entry.id];
         if (strength == null || entry.status != MemoryStatus.active) continue;
-        all[i] = entry.copyWith(strength: strength, lastDecayAt: decayedAt);
+        all[i] = entry.copyWith(
+          strength: strength,
+          lastDecayAt: decayedAt,
+          valence: valences[entry.id] ?? entry.valence,
+          arousal: arousals[entry.id] ?? entry.arousal,
+        );
         changed++;
       }
       if (changed > 0) await writeAll(all);

@@ -76,11 +76,13 @@ class MemoryForgettingService {
     required this.repository,
     this.minAgeDays = 7,
     this.baseTauDays = 30.0,
+    double? affectTauDays,
     this.archiveThreshold = 0.3,
     this.dryRun = true,
     this.exemptTypes = const {MemoryType.identity, MemoryType.instruction},
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  }) : affectTauDays = affectTauDays ?? baseTauDays * 2,
+       _clock = clock ?? DateTime.now;
 
   final MemoryRepository repository;
 
@@ -89,6 +91,9 @@ class MemoryForgettingService {
 
   /// Base retention time constant used by the exponential decay formula.
   final double baseTauDays;
+
+  /// Time constant for V/A drifting back toward neutral.
+  final double affectTauDays;
 
   /// Decayed strength below which an old entry is archived.
   final double archiveThreshold;
@@ -120,6 +125,8 @@ class MemoryForgettingService {
 
     final byType = <MemoryType, int>{};
     final updates = <String, double>{};
+    final valences = <String, double>{};
+    final arousals = <String, double>{};
     final archiveIds = <String>[];
     final buckets = <String, int>{};
     var exemptCount = 0;
@@ -154,6 +161,12 @@ class MemoryForgettingService {
       if (lastDecayAt == null) baselineCount++;
 
       updates[entry.id] = nextStrength;
+      final affectDays = lastDecayAt == null
+          ? 0.0
+          : _daysBetween(lastDecayAt, now);
+      final affectFactor = exp(-affectDays / affectTauDays);
+      valences[entry.id] = _clampSigned(entry.valence * affectFactor);
+      arousals[entry.id] = _clamp01(0.3 + (entry.arousal - 0.3) * affectFactor);
       final bucket = _bucket(nextStrength);
       buckets.update(bucket, (count) => count + 1, ifAbsent: () => 1);
 
@@ -171,6 +184,8 @@ class MemoryForgettingService {
       updatedCount = await repository.updateForgettingStrengths(
         updates,
         decayedAt: now,
+        valences: valences,
+        arousals: arousals,
       );
       archivedCount = await repository.archiveMany(
         archiveIds,
@@ -204,6 +219,12 @@ class MemoryForgettingService {
     final parsed = value.toDouble();
     if (!parsed.isFinite) return 0;
     return parsed.clamp(0.0, 1.0).toDouble();
+  }
+
+  static double _clampSigned(num value) {
+    final parsed = value.toDouble();
+    if (!parsed.isFinite) return 0;
+    return parsed.clamp(-1.0, 1.0).toDouble();
   }
 
   static String _bucket(double strength) {

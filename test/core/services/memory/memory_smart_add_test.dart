@@ -447,6 +447,41 @@ Sure:
       expect(afterMerge.importance, 0.9);
     });
 
+    test('MERGE updates affect only when the new item supplies V/A', () async {
+      final existing = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: '用户喜欢这个方案。',
+        source: MemorySource.manual,
+        valence: 0.5,
+        arousal: 0.6,
+      );
+
+      final merged = await smartAdd.applyDecision(
+        item: const SmartAddItem(
+          type: MemoryType.workflow,
+          content: 'ignored',
+          scope: MemoryScope.global,
+          valence: -0.5,
+          arousal: 0.2,
+          hasAffect: true,
+        ),
+        decision: SmartAddDecision(
+          action: SmartAddAction.merge,
+          targetId: existing.id,
+          mergedContent: '用户对这个方案的情绪变复杂了。',
+        ),
+        candidateIds: {existing.id},
+        source: MemorySource.extracted,
+      );
+      expect(merged.action, SmartAddAction.merge);
+      final afterMerge = (await chatRepository.memoriesByIds([
+        existing.id,
+      ])).single;
+      expect(afterMerge.valence, closeTo(0.2, 0.0001));
+      expect(afterMerge.arousal, closeTo(0.48, 0.0001));
+    });
+
     test('exact duplicate fast-path SKIP without LLM', () async {
       await seedAssistant('a1');
       final e = await memoryRepository.create(
