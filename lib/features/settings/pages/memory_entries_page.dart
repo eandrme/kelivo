@@ -14,6 +14,7 @@ import '../../../shared/widgets/ios_tactile.dart';
 import '../../../shared/widgets/selection_back_scope.dart';
 import '../../../utils/platform_utils.dart';
 import '../widgets/memory_forgetting_debug.dart';
+import '../widgets/memory_forgetting_dialog.dart';
 import '../widgets/memory_ui.dart';
 
 /// Global memory list with search, filters, batch delete, orphan cleanup (§14.4).
@@ -40,6 +41,11 @@ class MemoryEntriesPage extends StatelessWidget {
         ),
         title: Text(l10n.memoryEntriesPageTitle),
         actions: [
+          IconButton(
+            tooltip: memoryForgettingLabel(context),
+            icon: Icon(Lucide.Sparkles, size: 20, color: cs.onSurface),
+            onPressed: () => showMemoryForgettingDialog(context),
+          ),
           if (kDebugMode)
             TextButton(
               onPressed: () => showMemoryForgettingDebugDialog(context),
