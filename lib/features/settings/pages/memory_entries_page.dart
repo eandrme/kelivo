@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Kelivo/theme/app_font_weights.dart';
@@ -12,6 +13,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/ios_tactile.dart';
 import '../../../shared/widgets/selection_back_scope.dart';
 import '../../../utils/platform_utils.dart';
+import '../widgets/memory_forgetting_debug.dart';
 import '../widgets/memory_ui.dart';
 
 /// Global memory list with search, filters, batch delete, orphan cleanup (§14.4).
@@ -37,6 +39,13 @@ class MemoryEntriesPage extends StatelessWidget {
           ),
         ),
         title: Text(l10n.memoryEntriesPageTitle),
+        actions: [
+          if (kDebugMode)
+            TextButton(
+              onPressed: () => showMemoryForgettingDebugDialog(context),
+              child: const Text('DEBUG'),
+            ),
+        ],
       ),
       body: const MemoryEntriesContent(),
     );
