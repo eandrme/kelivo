@@ -729,6 +729,35 @@ void main() {
       expect(payload['id'], startsWith('mem_'));
     });
 
+    test('optional affect/importance/pinned are stored on NEW', () async {
+      final raw = await call(MemoryTools.memoryUpdate, {
+        'type': 'identity',
+        'content': 'User keeps a very important long-term fact.',
+        'valence': -0.4,
+        'arousal': 0.7,
+        'importance': 0.9,
+        'pinned': true,
+      });
+      final payload = decode(raw!);
+      expect(payload['action'], 'NEW');
+      final entry = (await chatRepository.memoriesByIds([
+        payload['id'] as String,
+      ])).single;
+      expect(entry.valence, -0.4);
+      expect(entry.arousal, 0.7);
+      expect(entry.importance, 0.9);
+      expect(entry.pinned, isTrue);
+    });
+
+    test('out-of-range affect is rejected', () async {
+      final raw = await call(MemoryTools.memoryUpdate, {
+        'type': 'identity',
+        'content': 'x',
+        'valence': 2,
+      });
+      expect(decode(raw!)['error'], 'invalid_memory_valence');
+    });
+
     test('empty content returns invalid_memory_content', () async {
       final raw = await call(MemoryTools.memoryUpdate, {
         'type': 'voice',
@@ -874,6 +903,34 @@ void main() {
       expect(payload['action'], 'EDIT');
       expect(payload['id'], created.id);
       expect(payload['content'], 'New identity');
+    });
+
+    test('optional affect/importance/pinned are applied', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.identity,
+        content: 'Editable affect',
+        source: MemorySource.manual,
+      );
+      final raw = await call(MemoryTools.memoryEdit, {
+        'id': created.id,
+        'content': 'Editable affect',
+        'valence': 0.6,
+        'arousal': 0.8,
+        'importance': 0.7,
+        'pinned': true,
+      });
+      final payload = decode(raw!);
+      expect(payload['action'], 'EDIT');
+      expect(payload['valence'], 0.6);
+      expect(payload['arousal'], 0.8);
+      expect(payload['importance'], 0.7);
+      expect(payload['pinned'], isTrue);
+      final entry = (await chatRepository.memoriesByIds([created.id])).single;
+      expect(entry.valence, 0.6);
+      expect(entry.arousal, 0.8);
+      expect(entry.importance, 0.7);
+      expect(entry.pinned, isTrue);
     });
 
     test('memory_not_found for missing/archived/invisible', () async {

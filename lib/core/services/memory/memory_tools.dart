@@ -529,6 +529,44 @@ abstract final class MemoryTools {
       );
     }
 
+    final valence = _asDouble(args['valence']);
+    if (args.containsKey('valence') &&
+        (valence == null || valence < -1 || valence > 1)) {
+      return toolError(
+        error: 'invalid_memory_valence',
+        message: 'valence must be between -1 and 1.',
+        tool: memoryUpdate,
+      );
+    }
+    final arousal = _asDouble(args['arousal']);
+    if (args.containsKey('arousal') &&
+        (arousal == null || arousal < 0 || arousal > 1)) {
+      return toolError(
+        error: 'invalid_memory_arousal',
+        message: 'arousal must be between 0 and 1.',
+        tool: memoryUpdate,
+      );
+    }
+    final importance = _asDouble(args['importance']);
+    if (args.containsKey('importance') &&
+        (importance == null || importance < 0 || importance > 1)) {
+      return toolError(
+        error: 'invalid_memory_importance',
+        message: 'importance must be between 0 and 1.',
+        tool: memoryUpdate,
+      );
+    }
+    final pinned = _asBool(args['pinned']);
+    if (args.containsKey('pinned') && pinned == null) {
+      return toolError(
+        error: 'invalid_memory_pinned',
+        message: 'pinned must be a boolean.',
+        tool: memoryUpdate,
+      );
+    }
+    final hasAffect =
+        args.containsKey('valence') || args.containsKey('arousal');
+
     final scopeArg = args['scope']?.toString();
     final scope = resolveWriteScope(assistant.memoryWriteScope, scopeArg);
     final assistantId = scope == MemoryScope.assistant ? assistant.id : null;
@@ -543,6 +581,11 @@ abstract final class MemoryTools {
         content: content,
         scope: scope,
         assistantId: assistantId,
+        valence: valence ?? 0.0,
+        arousal: arousal ?? 0.3,
+        importance: importance ?? 0.0,
+        pinned: pinned ?? false,
+        hasAffect: hasAffect,
       ),
       visibilityAssistantId: assistant.id,
       source: MemorySource.tool,
@@ -674,6 +717,44 @@ abstract final class MemoryTools {
       );
     }
 
+    final valence = _asDouble(args['valence']);
+    if (args.containsKey('valence') &&
+        (valence == null || valence < -1 || valence > 1)) {
+      return toolError(
+        error: 'invalid_memory_valence',
+        message: 'valence must be between -1 and 1.',
+        tool: memoryEdit,
+      );
+    }
+    final arousal = _asDouble(args['arousal']);
+    if (args.containsKey('arousal') &&
+        (arousal == null || arousal < 0 || arousal > 1)) {
+      return toolError(
+        error: 'invalid_memory_arousal',
+        message: 'arousal must be between 0 and 1.',
+        tool: memoryEdit,
+      );
+    }
+    final importance = _asDouble(args['importance']);
+    if (args.containsKey('importance') &&
+        (importance == null || importance < 0 || importance > 1)) {
+      return toolError(
+        error: 'invalid_memory_importance',
+        message: 'importance must be between 0 and 1.',
+        tool: memoryEdit,
+      );
+    }
+    final pinned = _asBool(args['pinned']);
+    if (args.containsKey('pinned') && pinned == null) {
+      return toolError(
+        error: 'invalid_memory_pinned',
+        message: 'pinned must be a boolean.',
+        tool: memoryEdit,
+      );
+    }
+    final hasAffect =
+        args.containsKey('valence') || args.containsKey('arousal');
+
     final found = await chatRepository.memoriesByIds([id]);
     final entry = found.isEmpty ? null : found.first;
     if (entry == null ||
@@ -698,19 +779,39 @@ abstract final class MemoryTools {
             'Use memory_read or memory_search_profile to obtain a valid id, or call memory_update to write a new entry instead of editing a missing one.',
       );
     }
+    var result = updated;
+    if (hasAffect) {
+      result =
+          await repository.updateAffect(
+            id,
+            valence: valence ?? updated.valence,
+            arousal: arousal ?? updated.arousal,
+          ) ??
+          result;
+    }
+    if (importance != null) {
+      result = await repository.setImportance(id, importance) ?? result;
+    }
+    if (pinned != null) {
+      result = await repository.setPinned(id, pinned) ?? result;
+    }
     traceStep?.addMutation(
       MemoryTraceMutation(
         kind: MemoryTraceMutationKind.memoryEdited,
-        targetId: updated.id,
-        label: MemoryEntry.typeToString(updated.type),
+        targetId: result.id,
+        label: MemoryEntry.typeToString(result.type),
         before: entry.content,
-        after: updated.content,
+        after: result.content,
       ),
     );
     return jsonEncode({
       'action': 'EDIT',
-      'id': updated.id,
-      'content': updated.content,
+      'id': result.id,
+      'content': result.content,
+      'valence': result.valence,
+      'arousal': result.arousal,
+      'importance': result.importance,
+      'pinned': result.pinned,
     });
   }
 
@@ -970,6 +1071,36 @@ abstract final class MemoryTools {
             ? '一条完整、自包含的第三人称陈述句，例如「用户偏好直接、可落地的中文说明」。不要使用「这个」「刚才」等指回本次对话的词。'
             : 'One complete, self-contained third-person statement, e.g. "The user prefers direct, actionable explanations in Chinese." Avoid deictic words that refer back to this conversation.',
       },
+      'valence': {
+        'type': 'number',
+        'minimum': -1,
+        'maximum': 1,
+        'description': zh
+            ? '可选。这条记忆的情绪效价：-1 很负面，0 中性，1 很正面；不是用户当前心情。省略时由抽取/系统默认处理。'
+            : 'Optional. Emotional valence of this memory: -1 negative, 0 neutral, 1 positive; not the user\'s current mood. Omit to use the extractor/system default.',
+      },
+      'arousal': {
+        'type': 'number',
+        'minimum': 0,
+        'maximum': 1,
+        'description': zh
+            ? '可选。这条记忆的情绪强度：0 平静，1 强烈。'
+            : 'Optional. Emotional intensity of this memory: 0 calm, 1 intense.',
+      },
+      'importance': {
+        'type': 'number',
+        'minimum': 0,
+        'maximum': 1,
+        'description': zh
+            ? '可选。长期保留价值：0 不重要，1 非常重要。只根据上下文判断，不要总是给高分。'
+            : 'Optional. Long-term value: 0 not important, 1 very important. Judge from context; do not always give a high score.',
+      },
+      'pinned': {
+        'type': 'boolean',
+        'description': zh
+            ? '可选。true 表示这条记忆必须长期保留，跳过自动遗忘；只在用户明确要求长期记住/不要忘记时使用。false 不会取消已有 pin。'
+            : 'Optional. true keeps this memory out of automatic forgetting; use only when the user explicitly asks to remember it long term. false does not remove an existing pin.',
+      },
     };
     if (writeScope == MemoryWriteScope.toolDefaultGlobal ||
         writeScope == MemoryWriteScope.toolDefaultAssistant) {
@@ -1060,6 +1191,36 @@ abstract final class MemoryTools {
               'description': zh
                   ? '修改后的完整内容，会整体替换原内容。'
                   : 'The full replacement content.',
+            },
+            'valence': {
+              'type': 'number',
+              'minimum': -1,
+              'maximum': 1,
+              'description': zh
+                  ? '可选。替换后的情绪效价：-1 很负面，0 中性，1 很正面；省略则保留原值。'
+                  : 'Optional replacement valence: -1 negative, 0 neutral, 1 positive. Omit to keep the current value.',
+            },
+            'arousal': {
+              'type': 'number',
+              'minimum': 0,
+              'maximum': 1,
+              'description': zh
+                  ? '可选。替换后的情绪强度：0 平静，1 强烈；省略则保留原值。'
+                  : 'Optional replacement arousal: 0 calm, 1 intense. Omit to keep the current value.',
+            },
+            'importance': {
+              'type': 'number',
+              'minimum': 0,
+              'maximum': 1,
+              'description': zh
+                  ? '可选。替换后的长期保留价值；省略则保留原值。'
+                  : 'Optional replacement long-term importance. Omit to keep the current value.',
+            },
+            'pinned': {
+              'type': 'boolean',
+              'description': zh
+                  ? '可选。true 固定这条记忆；false 取消固定；省略则保留原值。'
+                  : 'Optional. true pins this memory, false unpins it. Omit to keep the current value.',
             },
           },
           'required': ['id', 'content'],
@@ -1218,6 +1379,12 @@ abstract final class MemoryTools {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static double? _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
     return null;
   }
 

@@ -183,9 +183,13 @@ Output format (follow this XML exactly, no extra text):
 ## 已有记忆
 {{existingMemory}}
 
-输出格式：
+输出格式（importance 可省略；pinned 只在必须长期保留时加）：
+
+必须长期保留时的示例：
+<item type="identity" valence="0.3" arousal="0.4" importance="0.9" pinned="true">用户要求永远记住的偏好</item>
+
 <extracted>
-<item type="identity|workflow|voice|instruction" valence="-0.2" arousal="0.6">一句话描述</item>
+<item type="identity|workflow|voice|instruction" valence="-0.2" arousal="0.6" importance="0.7">一句话描述</item>
 </extracted>
 
 如果没有值得提取的信息：
@@ -221,9 +225,13 @@ Rules:
 ## Existing memory
 {{existingMemory}}
 
-Output format:
+Output format (importance may be omitted; add pinned only when it must be kept indefinitely):
+
+Example when it must be kept indefinitely:
+<item type="identity" valence="0.3" arousal="0.4" importance="0.9" pinned="true">a preference the user asked to remember forever</item>
+
 <extracted>
-<item type="identity|workflow|voice|instruction" valence="-0.2" arousal="0.6">one sentence</item>
+<item type="identity|workflow|voice|instruction" valence="-0.2" arousal="0.6" importance="0.7">one sentence</item>
 </extracted>
 
 If there is nothing worth extracting:
