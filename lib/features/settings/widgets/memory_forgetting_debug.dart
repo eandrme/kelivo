@@ -193,9 +193,9 @@ class _MemoryForgettingDebugDialogState
       make(
         id: 'mem_d00d0001',
         type: MemoryType.workflow,
-        content: '[debug] 10 天前、strength 0.4，预期归档',
+        content: '[debug] 10 天前、strength 0.2，预期归档',
         ageDays: 10,
-        strength: 0.4,
+        strength: 0.2,
         valence: -0.6,
         arousal: 0.8,
       ),
