@@ -1566,6 +1566,121 @@ class MemoryBadge extends StatelessWidget {
   }
 }
 
+class MemoryAffectStats extends StatelessWidget {
+  const MemoryAffectStats({super.key, required this.entry});
+
+  final MemoryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final valenceColor = entry.valence < -0.15
+        ? cs.error
+        : entry.valence > 0.15
+        ? cs.primary
+        : cs.onSurface.withValues(alpha: 0.6);
+    final strengthColor = entry.strength < 0.3
+        ? cs.error
+        : entry.strength < 0.6
+        ? cs.tertiary
+        : cs.primary;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        _MetricPill(
+          label: 'V',
+          value: entry.valence.toStringAsFixed(2),
+          color: valenceColor,
+        ),
+        _MetricPill(
+          label: 'A',
+          value: entry.arousal.toStringAsFixed(2),
+          color: cs.tertiary,
+        ),
+        _MetricPill(
+          label: 'S',
+          value: '${(entry.strength * 100).round()}%',
+          color: strengthColor,
+          trailing: _StrengthBar(value: entry.strength, color: strengthColor),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  const _MetricPill({
+    required this.label,
+    required this.value,
+    required this.color,
+    this.trailing,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(value, style: TextStyle(fontSize: 10.5, color: color)),
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
+        ],
+      ),
+    );
+  }
+}
+
+class _StrengthBar extends StatelessWidget {
+  const _StrengthBar({required this.value, required this.color});
+
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 3,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Stack(
+          children: [
+            Container(color: color.withValues(alpha: 0.18)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: value.clamp(0.0, 1.0),
+                heightFactor: 1,
+                child: Container(color: color),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class MemoryEntryCard extends StatelessWidget {
   const MemoryEntryCard({
     super.key,
@@ -1738,6 +1853,8 @@ class MemoryEntryCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 14, height: 1.35),
               ),
               const SizedBox(height: 6),
+              MemoryAffectStats(entry: entry),
+              const SizedBox(height: 4),
               Text(
                 meta,
                 style: TextStyle(

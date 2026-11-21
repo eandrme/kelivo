@@ -135,6 +135,9 @@ void main() {
     expect(find.text('Archived fact'), findsOneWidget);
     expect(find.text('Global'), findsWidgets);
     expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('V'), findsWidgets);
+    expect(find.text('A'), findsWidgets);
+    expect(find.text('S'), findsWidgets);
   });
 
   testWidgets('archive restore and hard delete reach provider with confirm', (
