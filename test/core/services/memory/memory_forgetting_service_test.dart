@@ -48,9 +48,13 @@ void main() {
     double strength = 1.0,
     DateTime? createdAt,
     DateTime? lastDecayAt,
+    bool noDecayBaseline = false,
     String? archiveReason,
   }) async {
     final created = createdAt ?? now.subtract(const Duration(days: 30));
+    final effectiveLastDecayAt = noDecayBaseline
+        ? null
+        : (lastDecayAt ?? created);
     final raw = preferences.getString(BusinessEntityKind.memoryEntry.sourceKey);
     final entries = <Map<String, dynamic>>[
       if (raw != null && raw.isNotEmpty)
@@ -72,7 +76,7 @@ void main() {
       'valence': valence,
       'arousal': arousal,
       'strength': strength,
-      'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
+      'lastDecayAt': effectiveLastDecayAt?.microsecondsSinceEpoch,
       'archiveReason': archiveReason,
     });
     await preferences.setString(
@@ -133,7 +137,10 @@ void main() {
     final weak = entries.firstWhere((entry) => entry.id == 'mem_weak0001');
     expect(weak.strength, 0.4);
     expect(weak.status, MemoryStatus.active);
-    expect(weak.lastDecayAt, isNull);
+    expect(
+      weak.lastDecayAt!.microsecondsSinceEpoch,
+      now.subtract(const Duration(days: 10)).microsecondsSinceEpoch,
+    );
 
     final dryApply = await service().apply();
     expect(dryApply.dryRun, isTrue);
@@ -142,7 +149,10 @@ void main() {
       (entry) => entry.id == 'mem_weak0001',
     );
     expect(unchanged.strength, 0.4);
-    expect(unchanged.lastDecayAt, isNull);
+    expect(
+      unchanged.lastDecayAt!.microsecondsSinceEpoch,
+      now.subtract(const Duration(days: 10)).microsecondsSinceEpoch,
+    );
   });
 
   test('apply writes strength, lastDecayAt, and archives candidates', () async {
@@ -200,6 +210,72 @@ void main() {
     expect(visible.map((entry) => entry.id), isNot(contains('mem_weak0001')));
   });
 
+  test('legacy entries without lastDecayAt start a fresh baseline', () async {
+    await putEntry(
+      id: 'mem_legacy01',
+      content: 'Legacy payload',
+      createdAt: now.subtract(const Duration(days: 90)),
+      strength: 0.1,
+      noDecayBaseline: true,
+    );
+
+    final preview = await service().preview();
+    expect(preview.baselineCount, 1);
+    expect(preview.updatedCount, 1);
+    expect(preview.archiveIds, isEmpty);
+
+    final applied = await service(dryRun: false).apply();
+    expect(applied.baselineCount, 1);
+    expect(applied.updatedCount, 1);
+    expect(applied.archivedCount, 0);
+
+    final entry = (await memoryRepository.readAll()).firstWhere(
+      (item) => item.id == 'mem_legacy01',
+    );
+    expect(entry.status, MemoryStatus.active);
+    expect(entry.strength, 0.1);
+    expect(
+      entry.lastDecayAt!.microsecondsSinceEpoch,
+      now.microsecondsSinceEpoch,
+    );
+
+    final next = await MemoryForgettingService(
+      repository: memoryRepository,
+      clock: () => now.add(const Duration(days: 1)),
+    ).preview();
+    expect(next.baselineCount, 0);
+    expect(next.archiveIds, ['mem_legacy01']);
+  });
+
+  test('onlyIds limits decay and archiving', () async {
+    await putEntry(
+      id: 'mem_a0000001',
+      content: 'Selected',
+      createdAt: now.subtract(const Duration(days: 30)),
+      strength: 0.1,
+    );
+    await putEntry(
+      id: 'mem_b0000001',
+      content: 'Untouched',
+      createdAt: now.subtract(const Duration(days: 30)),
+      strength: 0.1,
+    );
+
+    final report = await service(
+      dryRun: false,
+    ).apply(onlyIds: {'mem_a0000001'});
+    expect(report.scanned, 1);
+    expect(report.updatedCount, 1);
+    expect(report.archivedCount, 1);
+
+    final entries = await memoryRepository.readAll();
+    final selected = entries.firstWhere((entry) => entry.id == 'mem_a0000001');
+    expect(selected.status, MemoryStatus.archived);
+    final untouched = entries.firstWhere((entry) => entry.id == 'mem_b0000001');
+    expect(untouched.status, MemoryStatus.active);
+    expect(untouched.strength, 0.1);
+  });
+
   test('identity and instruction never decay or archive', () async {
     await putEntry(
       id: 'mem_identity',
@@ -207,6 +283,7 @@ void main() {
       type: MemoryType.identity,
       createdAt: now.subtract(const Duration(days: 90)),
       strength: 0.1,
+      noDecayBaseline: true,
     );
     await putEntry(
       id: 'mem_instruct',
@@ -214,6 +291,7 @@ void main() {
       type: MemoryType.instruction,
       createdAt: now.subtract(const Duration(days: 90)),
       strength: 0.1,
+      noDecayBaseline: true,
     );
     await putEntry(
       id: 'mem_flow0001',

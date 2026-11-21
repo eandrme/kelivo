@@ -79,10 +79,10 @@ class _MemoryForgettingDebugDialogState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Apply forgetting?'),
+        title: const Text('Apply forgetting (all)?'),
         content: const Text(
-          'This writes strength/lastDecayAt and archives candidates in the '
-          'local database. Debug data only; this is not a dry run.',
+          'This writes strength/lastDecayAt and archives every candidate in '
+          'the local database. Prefer Apply one or Apply debug first.',
         ),
         actions: [
           TextButton(
@@ -91,7 +91,7 @@ class _MemoryForgettingDebugDialogState
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Apply'),
+            child: const Text('Apply all'),
           ),
         ],
       ),
@@ -106,7 +106,41 @@ class _MemoryForgettingDebugDialogState
       );
       final report = await service.apply();
       await provider.refreshAll();
-      return 'APPLIED\n${_formatReport(report)}';
+      return 'APPLIED ALL\n${_formatReport(report)}';
+    });
+  }
+
+  Future<void> _applyOne() {
+    return _run(() async {
+      final provider = context.read<MemoryProviderV2>();
+      final preview = await provider.forgetting.preview();
+      if (preview.archiveIds.isEmpty) return 'No archive candidates.';
+      final id = preview.archiveIds.first;
+      final service = MemoryForgettingService(
+        repository: provider.repository,
+        dryRun: false,
+      );
+      final report = await service.apply(onlyIds: {id});
+      await provider.refreshAll();
+      return 'APPLIED ONE: $id\n${_formatReport(report)}';
+    });
+  }
+
+  Future<void> _applyDebug() {
+    return _run(() async {
+      final provider = context.read<MemoryProviderV2>();
+      final ids = provider.entries
+          .where((entry) => entry.id.startsWith('mem_d00d'))
+          .map((entry) => entry.id)
+          .toSet();
+      if (ids.isEmpty) return 'No debug entries. Tap Seed first.';
+      final service = MemoryForgettingService(
+        repository: provider.repository,
+        dryRun: false,
+      );
+      final report = await service.apply(onlyIds: ids);
+      await provider.refreshAll();
+      return 'APPLIED DEBUG\n${_formatReport(report)}';
     });
   }
 
@@ -120,7 +154,8 @@ class _MemoryForgettingDebugDialogState
     return [
       'dryRun=${report.dryRun} applied=${report.applied}',
       'scanned=${report.scanned} exempt=${report.exemptCount} '
-          'updated=${report.updatedCount} archived=${report.archivedCount}',
+          'baseline=${report.baselineCount} updated=${report.updatedCount} '
+          'archived=${report.archivedCount}',
       'byType: $byType',
       'strength: $buckets',
       'candidates: ${report.archiveIds.join(', ')}',
@@ -147,6 +182,7 @@ class _MemoryForgettingDebugDialogState
         source: MemorySource.manual,
         createdAt: created,
         updatedAt: created,
+        lastDecayAt: created,
         valence: valence,
         arousal: arousal,
         strength: strength,
@@ -240,8 +276,16 @@ class _MemoryForgettingDebugDialogState
                     child: const Text('Preview'),
                   ),
                   FilledButton.tonal(
+                    onPressed: _busy ? null : _applyOne,
+                    child: const Text('Apply one'),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: _busy ? null : _applyDebug,
+                    child: const Text('Apply debug'),
+                  ),
+                  FilledButton.tonal(
                     onPressed: _busy ? null : _apply,
-                    child: const Text('Apply'),
+                    child: const Text('Apply all'),
                   ),
                   OutlinedButton(
                     onPressed: _busy ? null : _clear,

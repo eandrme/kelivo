@@ -8,6 +8,7 @@ class MemoryForgettingReport {
   MemoryForgettingReport({
     required this.scanned,
     required this.exemptCount,
+    required this.baselineCount,
     required Map<MemoryType, int> byType,
     required List<String> archiveIds,
     required Map<String, int> strengthBuckets,
@@ -25,6 +26,9 @@ class MemoryForgettingReport {
 
   /// Active entries whose type is exempt from decay and automatic archiving.
   final int exemptCount;
+
+  /// Entries that have no decay timestamp yet and start a fresh baseline.
+  final int baselineCount;
 
   /// Active entry counts by type, including exempt types.
   final Map<MemoryType, int> byType;
@@ -52,9 +56,9 @@ class MemoryForgettingReport {
   final DateTime now;
 
   String get summary =>
-      'scanned=$scanned exempt=$exemptCount updated=$updatedCount '
-      'archiveCandidates=${archiveIds.length} archived=$archivedCount '
-      'dryRun=$dryRun';
+      'scanned=$scanned exempt=$exemptCount baseline=$baselineCount '
+      'updated=$updatedCount archiveCandidates=${archiveIds.length} '
+      'archived=$archivedCount dryRun=$dryRun';
 }
 
 /// Strength decay and automatic archiving for V2 memories.
@@ -95,12 +99,17 @@ class MemoryForgettingService {
   String get archiveReason => 'forgetting:strength<$archiveThreshold';
 
   /// Computes the pass without writing anything.
-  Future<MemoryForgettingReport> preview() => _run(write: false);
+  Future<MemoryForgettingReport> preview({Set<String>? onlyIds}) =>
+      _run(write: false, onlyIds: onlyIds);
 
   /// Applies strength updates and archives candidates unless [dryRun] is on.
-  Future<MemoryForgettingReport> apply() => _run(write: !dryRun);
+  Future<MemoryForgettingReport> apply({Set<String>? onlyIds}) =>
+      _run(write: !dryRun, onlyIds: onlyIds);
 
-  Future<MemoryForgettingReport> _run({required bool write}) async {
+  Future<MemoryForgettingReport> _run({
+    required bool write,
+    Set<String>? onlyIds,
+  }) async {
     final now = _clock().toUtc();
     final all = await repository.readAll();
 
@@ -109,9 +118,11 @@ class MemoryForgettingService {
     final archiveIds = <String>[];
     final buckets = <String, int>{};
     var exemptCount = 0;
+    var baselineCount = 0;
 
     for (final entry in all) {
       if (entry.status != MemoryStatus.active) continue;
+      if (onlyIds != null && !onlyIds.contains(entry.id)) continue;
 
       byType.update(entry.type, (count) => count + 1, ifAbsent: () => 1);
       if (exemptTypes.contains(entry.type)) {
@@ -119,19 +130,26 @@ class MemoryForgettingService {
         continue;
       }
 
-      final decayDays = _daysBetween(entry.lastDecayAt ?? entry.createdAt, now);
       final tau =
           baseTauDays *
           (1 + 0.5 * max(0.0, -entry.valence)) *
           (1 + 0.3 * entry.arousal);
-      final nextStrength = _clamp01(entry.strength * exp(-decayDays / tau));
+      final lastDecayAt = entry.lastDecayAt;
+      final nextStrength = lastDecayAt == null
+          ? entry.strength
+          : _clamp01(
+              entry.strength * exp(-_daysBetween(lastDecayAt, now) / tau),
+            );
+      if (lastDecayAt == null) baselineCount++;
 
       updates[entry.id] = nextStrength;
       final bucket = _bucket(nextStrength);
       buckets.update(bucket, (count) => count + 1, ifAbsent: () => 1);
 
       final ageDays = _daysBetween(entry.createdAt, now);
-      if (ageDays >= minAgeDays && nextStrength < archiveThreshold) {
+      if (lastDecayAt != null &&
+          ageDays >= minAgeDays &&
+          nextStrength < archiveThreshold) {
         archiveIds.add(entry.id);
       }
     }
@@ -152,6 +170,7 @@ class MemoryForgettingService {
     return MemoryForgettingReport(
       scanned: byType.values.fold(0, (sum, count) => sum + count),
       exemptCount: exemptCount,
+      baselineCount: baselineCount,
       byType: byType,
       archiveIds: archiveIds,
       strengthBuckets: buckets,
