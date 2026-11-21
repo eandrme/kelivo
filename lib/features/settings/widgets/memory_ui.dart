@@ -1235,6 +1235,8 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
   late double _valence;
   late double _arousal;
   late double _importance;
+  late bool _affectKnown;
+  bool _affectTouched = false;
   String? _assistantId;
   bool _saving = false;
 
@@ -1248,6 +1250,7 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
     _valence = existing?.valence ?? 0.0;
     _arousal = existing?.arousal ?? 0.3;
     _importance = existing?.importance ?? 0.0;
+    _affectKnown = existing?.affectKnown ?? false;
     _assistantId = existing?.assistantId ?? widget.defaultAssistantId;
   }
 
@@ -1336,6 +1339,7 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
           valence: _valence,
           arousal: _arousal,
           importance: _importance,
+          affectKnown: _affectKnown || _affectTouched,
         );
       } else {
         final scopeKindChanged = nextScope != existing.scope;
@@ -1365,7 +1369,7 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
             assistantId: assistantId,
           );
         }
-        if (_valence != existing.valence || _arousal != existing.arousal) {
+        if (_affectTouched) {
           await mp.updateAffect(
             existing.id,
             valence: _valence,
@@ -1456,21 +1460,30 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
         value: _valence,
         min: -1,
         max: 1,
-        onChanged: (value) => setState(() => _valence = value),
+        onChanged: (value) => setState(() {
+          _valence = value;
+          _affectTouched = true;
+        }),
       ),
       _affectRow(
         label: 'A',
         value: _arousal,
         min: 0,
         max: 1,
-        onChanged: (value) => setState(() => _arousal = value),
+        onChanged: (value) => setState(() {
+          _arousal = value;
+          _affectTouched = true;
+        }),
       ),
       _affectRow(
         label: 'I',
         value: _importance,
         min: 0,
         max: 1,
-        onChanged: (value) => setState(() => _importance = value),
+        onChanged: (value) => setState(() {
+          _importance = value;
+          _affectTouched = true;
+        }),
       ),
     ];
   }
@@ -1668,11 +1681,16 @@ class MemoryAffectStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final valenceColor = entry.valence < -0.15
+    final valenceColor = !entry.affectKnown
+        ? cs.onSurface.withValues(alpha: 0.45)
+        : entry.valence < -0.15
         ? cs.error
         : entry.valence > 0.15
         ? cs.primary
         : cs.onSurface.withValues(alpha: 0.6);
+    final arousalColor = !entry.affectKnown
+        ? cs.onSurface.withValues(alpha: 0.45)
+        : cs.tertiary;
     final strengthColor = entry.strength < 0.3
         ? cs.error
         : entry.strength < 0.6
@@ -1684,13 +1702,13 @@ class MemoryAffectStats extends StatelessWidget {
       children: [
         _MetricPill(
           label: 'V',
-          value: entry.valence.toStringAsFixed(2),
+          value: entry.affectKnown ? entry.valence.toStringAsFixed(2) : '--',
           color: valenceColor,
         ),
         _MetricPill(
           label: 'A',
-          value: entry.arousal.toStringAsFixed(2),
-          color: cs.tertiary,
+          value: entry.affectKnown ? entry.arousal.toStringAsFixed(2) : '--',
+          color: arousalColor,
         ),
         _MetricPill(
           label: 'I',

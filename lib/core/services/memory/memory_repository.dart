@@ -18,6 +18,7 @@ class MemoryCreateDraft {
     this.arousal = 0.3,
     this.importance = 0.0,
     this.pinned = false,
+    this.affectKnown = false,
   });
 
   final MemoryScope scope;
@@ -31,6 +32,7 @@ class MemoryCreateDraft {
   final double arousal;
   final double importance;
   final bool pinned;
+  final bool affectKnown;
 }
 
 class MemoryCreateManyResult {
@@ -79,6 +81,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     double arousal = 0.3,
     double importance = 0.0,
     bool pinned = false,
+    bool affectKnown = false,
   }) {
     return runExclusive(() async {
       _validateScope(scope, assistantId);
@@ -101,6 +104,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         arousal: arousal,
         importance: importance,
         pinned: pinned,
+        affectKnown: affectKnown,
       );
       all.add(entry);
       await writeAll(all);
@@ -192,6 +196,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
           arousal: draft.arousal,
           importance: draft.importance,
           pinned: draft.pinned,
+          affectKnown: draft.affectKnown,
         );
         all.add(entry);
         contentIndexes[contentKey] = all.length - 1;
@@ -245,7 +250,11 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
       final all = await readAll();
       final index = all.indexWhere((entry) => entry.id == id);
       if (index == -1) return null;
-      final updated = all[index].copyWith(valence: valence, arousal: arousal);
+      final updated = all[index].copyWith(
+        valence: valence,
+        arousal: arousal,
+        affectKnown: true,
+      );
       if (updated.valence == all[index].valence &&
           updated.arousal == all[index].arousal) {
         return updated;
@@ -278,6 +287,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     Iterable<String> ids, {
     DateTime? now,
     double boost = 0.1,
+    Duration cooldown = const Duration(hours: 6),
   }) {
     return runExclusive(() async {
       final targets = ids.toSet();
@@ -289,6 +299,10 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         final entry = all[i];
         if (entry.status != MemoryStatus.active ||
             !targets.contains(entry.id)) {
+          continue;
+        }
+        final last = entry.lastRecalledAt;
+        if (last != null && timestamp.difference(last) < cooldown) {
           continue;
         }
         all[i] = entry.copyWith(

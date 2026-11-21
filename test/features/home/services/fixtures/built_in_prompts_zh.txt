@@ -20,6 +20,8 @@ You are a careful editor.
 
 用户明确指出某条记忆不对时，用 memory_edit 修改，或用 memory_delete 归档。
 
+当你在回答中实际使用或依赖某条记忆时，才调用 memory_reinforce 记录；只搜索或读取但没有真正使用，不要调用。该工具有冷却，不要连续刷。
+
 需要回忆之前聊过的内容时，用 chat_search 按关键词搜索历史对话，不要凭印象作答。
 
 <citations>
@@ -133,6 +135,24 @@ identity 身份信息；workflow 做事方式与工具偏好；voice 表达风�
 [memory_update.parameters.properties.content]
 一条完整、自包含的第三人称陈述句，例如「用户偏好直接、可落地的中文说明」。不要使用「这个」「刚才」等指回本次对话的词。
 
+[memory_update.parameters.properties.valence]
+可选。这条记忆的情绪效价：-1 很负面，0 中性，1 很正面；不是用户当前心情。省略时由抽取/系统默认处理。
+
+[memory_update.parameters.properties.arousal]
+可选。这条记忆的情绪强度：0 平静，1 强烈。
+
+[memory_update.parameters.properties.importance]
+可选。长期保留价值：0 不重要，1 非常重要。只根据上下文判断，不要总是给高分。
+
+[memory_update.parameters.properties.pinned]
+可选。true 表示这条记忆必须长期保留，跳过自动遗忘；只在用户明确要求长期记住/不要忘记时使用。false 不会取消已有 pin。
+
+[memory_reinforce]
+显式加固一条你实际使用/依赖的记忆。只有在你真的用到了某条记忆时才调用；仅仅搜索或读取但没有使用，不要调用。系统有冷却，重复调用不会一直增加。
+
+[memory_reinforce.parameters.properties.id]
+要加固的记忆 id，形如 mem_a1b2c3d4。
+
 [memory_edit]
 修改一条已有记忆的内容。需要先用 memory_read 或 memory_search_profile 拿到条目 id（形如 mem_xxxxxxxx）。只在记忆内容确实过时或有错时使用；补充新信息请用 memory_update。
 
@@ -141,6 +161,18 @@ identity 身份信息；workflow 做事方式与工具偏好；voice 表达风�
 
 [memory_edit.parameters.properties.content]
 修改后的完整内容，会整体替换原内容。
+
+[memory_edit.parameters.properties.valence]
+可选。替换后的情绪效价：-1 很负面，0 中性，1 很正面；省略则保留原值。
+
+[memory_edit.parameters.properties.arousal]
+可选。替换后的情绪强度：0 平静，1 强烈；省略则保留原值。
+
+[memory_edit.parameters.properties.importance]
+可选。替换后的长期保留价值；省略则保留原值。
+
+[memory_edit.parameters.properties.pinned]
+可选。true 固定这条记忆；false 取消固定；省略则保留原值。
 
 [memory_delete]
 归档一条记忆（软删除）。归档后不再出现在记忆摘要和搜索结果里，用户仍可以在设置中看到并恢复。需要先用 memory_read 或 memory_search_profile 拿到条目 id。只在用户明确表示某条记忆不再成立时使用。

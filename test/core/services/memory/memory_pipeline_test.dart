@@ -450,6 +450,7 @@ void main() {
       expect(entries.first.valence, -0.3);
       expect(entries.first.arousal, 0.6);
       expect(entries.first.importance, 0.7);
+      expect(entries.first.affectKnown, isTrue);
       expect(entries.first.pinned, isTrue);
     });
 

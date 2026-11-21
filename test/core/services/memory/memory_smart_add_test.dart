@@ -480,6 +480,7 @@ Sure:
       ])).single;
       expect(afterMerge.valence, closeTo(0.2, 0.0001));
       expect(afterMerge.arousal, closeTo(0.48, 0.0001));
+      expect(afterMerge.affectKnown, isTrue);
     });
 
     test('exact duplicate fast-path SKIP without LLM', () async {

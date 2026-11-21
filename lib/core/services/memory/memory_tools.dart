@@ -22,6 +22,7 @@ abstract final class MemoryTools {
   static const String memoryRead = 'memory_read';
   static const String memoryUpdate = 'memory_update';
   static const String memorySearchProfile = 'memory_search_profile';
+  static const String memoryReinforce = 'memory_reinforce';
   static const String memoryEdit = 'memory_edit';
   static const String memoryDelete = 'memory_delete';
   static const String updateUserProfile = 'update_user_profile';
@@ -31,6 +32,7 @@ abstract final class MemoryTools {
     memoryRead,
     memoryUpdate,
     memorySearchProfile,
+    memoryReinforce,
     memoryEdit,
     memoryDelete,
     updateUserProfile,
@@ -39,6 +41,7 @@ abstract final class MemoryTools {
   /// Tools that persist something beyond the current conversation.
   static const Set<String> writeToolNames = {
     memoryUpdate,
+    memoryReinforce,
     memoryEdit,
     memoryDelete,
     updateUserProfile,
@@ -80,6 +83,7 @@ abstract final class MemoryTools {
       out.add(_defMemorySearchProfile(lang));
       if (allowMemoryWrites) {
         out.add(_defMemoryUpdate(lang, writeScope));
+        out.add(_defMemoryReinforce(lang));
         out.add(_defMemoryEdit(lang));
         out.add(_defMemoryDelete(lang));
         out.add(_defUpdateUserProfile(lang));
@@ -100,6 +104,7 @@ abstract final class MemoryTools {
       _defMemoryRead(lang),
       _defMemorySearchProfile(lang),
       _defMemoryUpdate(lang, MemoryWriteScope.toolDefaultGlobal),
+      _defMemoryReinforce(lang),
       _defMemoryEdit(lang),
       _defMemoryDelete(lang),
       _defUpdateUserProfile(lang),
@@ -303,7 +308,13 @@ abstract final class MemoryTools {
             args: args,
             assistant: assistant,
             chatRepository: chatRepository,
+          );
+        case memoryReinforce:
+          result = await _handleMemoryReinforce(
+            args: args,
+            assistant: assistant,
             repository: repository,
+            chatRepository: chatRepository,
           );
           await onMutated?.call();
         case memoryEdit:
@@ -603,7 +614,6 @@ abstract final class MemoryTools {
     required Map<String, dynamic> args,
     required Assistant assistant,
     required ChatDatabaseRepository chatRepository,
-    MemoryRepository? repository,
   }) async {
     final query = (args['query'] ?? '').toString();
     if (query.trim().isEmpty) {
@@ -639,12 +649,7 @@ abstract final class MemoryTools {
       limit: limit,
     );
 
-    // A search is an explicit recall attempt. Reinforce the top hit only, so
-    // merely listing memories never inflates strength.
-    if (repository != null && matched.isNotEmpty) {
-      await repository.recordRecalls([matched.first.id]);
-    }
-
+    // A search is read-only. Reinforcement happens only via memory_reinforce.
     final matchedIds = {for (final e in matched) e.id};
     // relatedId → first via matched id (matched order).
     final viaByRelated = <String, String>{};
@@ -690,6 +695,53 @@ abstract final class MemoryTools {
             'updatedAt': MemoryBlockBuilder.fmtDate(e.updatedAt),
           },
       ],
+    });
+  }
+
+  static Future<String> _handleMemoryReinforce({
+    required Map<String, dynamic> args,
+    required Assistant assistant,
+    required MemoryRepository repository,
+    required ChatDatabaseRepository chatRepository,
+  }) async {
+    final id = (args['id'] ?? '').toString().trim();
+    if (id.isEmpty) {
+      return toolError(
+        error: 'invalid_memory_id',
+        message: 'id is required (e.g. mem_a1b2c3d4).',
+        tool: memoryReinforce,
+      );
+    }
+    final found = await chatRepository.memoriesByIds([id]);
+    final entry = found.isEmpty ? null : found.first;
+    if (entry == null ||
+        entry.status != MemoryStatus.active ||
+        !_isVisible(entry, assistant.id)) {
+      return toolError(
+        error: 'memory_not_found',
+        message: 'No active visible memory was found for id $id.',
+        tool: memoryReinforce,
+        instruction: 'Search or read memories to obtain a valid active id.',
+      );
+    }
+
+    final changed = await repository.recordRecalls([id]);
+    if (changed == 0) {
+      return toolError(
+        error: 'reinforce_cooldown',
+        message: 'This memory was reinforced recently; cooldown is active.',
+        tool: memoryReinforce,
+        instruction:
+            'Do not retry immediately. Use the memory normally; it can be reinforced again later.',
+      );
+    }
+    final updated = (await chatRepository.memoriesByIds([id])).single;
+    return jsonEncode({
+      'action': 'REINFORCE',
+      'id': updated.id,
+      'strength': updated.strength,
+      'recallCount': updated.recallCount,
+      'lastRecalledAt': MemoryBlockBuilder.fmtDate(updated.lastRecalledAt!),
     });
   }
 
@@ -1123,6 +1175,31 @@ abstract final class MemoryTools {
           'type': 'object',
           'properties': properties,
           'required': ['type', 'content'],
+        },
+      },
+    };
+  }
+
+  static Map<String, dynamic> _defMemoryReinforce(MemoryPromptLang lang) {
+    final zh = lang == MemoryPromptLang.zh;
+    return {
+      'type': 'function',
+      'function': {
+        'name': memoryReinforce,
+        'description': zh
+            ? '显式加固一条你实际使用/依赖的记忆。只有在你真的用到了某条记忆时才调用；仅仅搜索或读取但没有使用，不要调用。系统有冷却，重复调用不会一直增加。'
+            : 'Explicitly reinforce a memory you actually used or relied on. Call only when you really used it in the answer; do not call after a search or read that you did not use. There is a cooldown, so repeated calls do not keep boosting it.',
+        'parameters': {
+          'type': 'object',
+          'properties': {
+            'id': {
+              'type': 'string',
+              'description': zh
+                  ? '要加固的记忆 id，形如 mem_a1b2c3d4。'
+                  : 'Memory id to reinforce, e.g. mem_a1b2c3d4.',
+            },
+          },
+          'required': ['id'],
         },
       },
     };

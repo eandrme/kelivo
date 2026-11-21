@@ -30,6 +30,9 @@ class MemoryEntry {
   /// How important this memory is to keep, from 0 to 1. Higher slows decay.
   final double importance;
 
+  /// True when V/A came from a real source, not the neutral placeholder.
+  final bool affectKnown;
+
   /// Decayed retention strength, from 0 to 1.
   final double strength;
 
@@ -63,6 +66,7 @@ class MemoryEntry {
     double valence = 0.0,
     double arousal = 0.3,
     double importance = 0.0,
+    this.affectKnown = false,
     double strength = 1.0,
     this.lastDecayAt,
     this.archiveReason,
@@ -90,6 +94,7 @@ class MemoryEntry {
     double? valence,
     double? arousal,
     double? importance,
+    bool? affectKnown,
     double? strength,
     DateTime? lastDecayAt,
     String? archiveReason,
@@ -114,6 +119,7 @@ class MemoryEntry {
     valence: valence ?? this.valence,
     arousal: arousal ?? this.arousal,
     importance: importance ?? this.importance,
+    affectKnown: affectKnown ?? this.affectKnown,
     strength: strength ?? this.strength,
     lastDecayAt: clearLastDecayAt ? null : (lastDecayAt ?? this.lastDecayAt),
     archiveReason: clearArchiveReason
@@ -139,6 +145,7 @@ class MemoryEntry {
     'valence': valence,
     'arousal': arousal,
     'importance': importance,
+    'affectKnown': affectKnown,
     'strength': strength,
     'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
     'archiveReason': archiveReason,
@@ -170,6 +177,7 @@ class MemoryEntry {
       valence: _readDouble(json['valence'], 0.0),
       arousal: _readDouble(json['arousal'], 0.3),
       importance: _readDouble(json['importance'], 0.0),
+      affectKnown: json['affectKnown'] == true,
       strength: _readDouble(json['strength'], 1.0),
       lastDecayAt: _readDateTime(json['lastDecayAt']),
       archiveReason: json['archiveReason'] is String

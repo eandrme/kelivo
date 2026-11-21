@@ -462,6 +462,7 @@ class MemorySmartAdd {
           arousal: item.arousal,
           importance: item.importance,
           pinned: item.pinned,
+          affectKnown: item.hasAffect,
         );
         for (final rid in normalized.relatedIds) {
           await repository.linkBidirectional(created.id, rid);
@@ -539,6 +540,7 @@ class MemorySmartAdd {
           arousal: item.arousal,
           importance: item.importance,
           pinned: item.pinned,
+          affectKnown: item.hasAffect,
         );
         await repository.linkBidirectional(created.id, oldId);
         for (final rid in normalized.relatedIds) {

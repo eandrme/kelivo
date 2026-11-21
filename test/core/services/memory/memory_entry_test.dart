@@ -86,6 +86,7 @@ void main() {
       double valence = 0.0,
       double arousal = 0.3,
       double importance = 0.0,
+      bool affectKnown = false,
       double strength = 1.0,
       DateTime? lastDecayAt,
       String? archiveReason,
@@ -101,6 +102,7 @@ void main() {
       valence: valence,
       arousal: arousal,
       importance: importance,
+      affectKnown: affectKnown,
       strength: strength,
       lastDecayAt: lastDecayAt,
       archiveReason: archiveReason,
@@ -128,6 +130,7 @@ void main() {
       expect(entry.valence, 0.0);
       expect(entry.arousal, 0.3);
       expect(entry.importance, 0.0);
+      expect(entry.affectKnown, isFalse);
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
@@ -141,6 +144,7 @@ void main() {
         valence: -0.6,
         arousal: 0.8,
         importance: 0.7,
+        affectKnown: true,
         strength: 0.42,
         lastDecayAt: lastDecayAt,
         archiveReason: 'forgetting:strength<0.3',
@@ -156,6 +160,7 @@ void main() {
       expect(restored.valence, -0.6);
       expect(restored.arousal, 0.8);
       expect(restored.importance, 0.7);
+      expect(restored.affectKnown, isTrue);
       expect(restored.strength, 0.42);
       expect(
         restored.lastDecayAt!.microsecondsSinceEpoch,
@@ -226,6 +231,7 @@ void main() {
       expect(entry.valence, 0.0);
       expect(entry.arousal, 0.3);
       expect(entry.importance, 0.0);
+      expect(entry.affectKnown, isFalse);
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
@@ -238,6 +244,7 @@ void main() {
         valence: 0.5,
         arousal: 0.6,
         importance: 0.8,
+        affectKnown: true,
         strength: 0.7,
         lastDecayAt: lastDecayAt,
         archiveReason: 'manual',
@@ -251,6 +258,7 @@ void main() {
       expect(updated.valence, 0.5);
       expect(updated.arousal, 0.6);
       expect(updated.importance, 0.8);
+      expect(updated.affectKnown, isTrue);
       expect(updated.strength, 0.7);
       expect(updated.lastDecayAt, lastDecayAt);
       expect(updated.archiveReason, 'manual');
@@ -266,6 +274,7 @@ void main() {
       expect(cleared.valence, 0.5);
       expect(cleared.arousal, 0.6);
       expect(cleared.importance, 0.8);
+      expect(cleared.affectKnown, isTrue);
       expect(cleared.strength, 0.7);
       expect(cleared.pinned, isTrue);
       expect(cleared.copyWith(pinned: false).pinned, isFalse);

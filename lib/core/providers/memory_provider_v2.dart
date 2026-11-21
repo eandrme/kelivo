@@ -158,6 +158,7 @@ class MemoryProviderV2 extends ChangeNotifier {
     double valence = 0.0,
     double arousal = 0.3,
     double importance = 0.0,
+    bool affectKnown = false,
   }) async {
     final entry = await repository.create(
       scope: scope,
@@ -169,6 +170,7 @@ class MemoryProviderV2 extends ChangeNotifier {
       valence: valence,
       arousal: arousal,
       importance: importance,
+      affectKnown: affectKnown,
     );
     await _refreshAfterWrite();
     return entry;

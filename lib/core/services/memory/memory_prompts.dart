@@ -30,6 +30,8 @@ abstract final class MemoryPrompts {
 写入时用完整的第三人称陈述句描述用户，不要使用「这个」「刚才」等指回本次对话的词。系统会自动去重合并，不需要先读取再全文替换。
 
 用户明确指出某条记忆不对时，用 memory_edit 修改，或用 memory_delete 归档。
+
+当你在回答中实际使用或依赖某条记忆时，才调用 memory_reinforce 记录；只搜索或读取但没有真正使用，不要调用。该工具有冷却，不要连续刷。
 '''
           .trim();
 
@@ -54,6 +56,8 @@ Do not write: temporary context from this conversation, conclusions you inferred
 Write complete third-person statements about the user. Do not use words like "this" or "just now" that point back to the current conversation. The system deduplicates and merges automatically, so you do not need to read first and rewrite the whole entry.
 
 When the user says an entry is wrong, use memory_edit to fix it or memory_delete to archive it.
+
+When you actually use or rely on a memory in your answer, call memory_reinforce for it. Do not call it after a search or read that you did not use. The tool has a cooldown; do not spam it.
 '''
           .trim();
 

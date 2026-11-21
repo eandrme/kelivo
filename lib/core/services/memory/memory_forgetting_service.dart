@@ -164,9 +164,13 @@ class MemoryForgettingService {
       final affectDays = lastDecayAt == null
           ? 0.0
           : _daysBetween(lastDecayAt, now);
-      final affectFactor = exp(-affectDays / affectTauDays);
-      valences[entry.id] = _clampSigned(entry.valence * affectFactor);
-      arousals[entry.id] = _clamp01(0.3 + (entry.arousal - 0.3) * affectFactor);
+      if (entry.affectKnown) {
+        final affectFactor = exp(-affectDays / affectTauDays);
+        valences[entry.id] = _clampSigned(entry.valence * affectFactor);
+        arousals[entry.id] = _clamp01(
+          0.3 + (entry.arousal - 0.3) * affectFactor,
+        );
+      }
       final bucket = _bucket(nextStrength);
       buckets.update(bucket, (count) => count + 1, ifAbsent: () => 1);
 

@@ -20,6 +20,8 @@ Write complete third-person statements about the user. Do not use words like "th
 
 When the user says an entry is wrong, use memory_edit to fix it or memory_delete to archive it.
 
+When you actually use or rely on a memory in your answer, call memory_reinforce for it. Do not call it after a search or read that you did not use. The tool has a cooldown; do not spam it.
+
 When you need to recall something discussed before, use chat_search to search past conversations by keyword. Do not answer from impression.
 
 <citations>
@@ -133,6 +135,24 @@ identity: identity facts; workflow: ways of working and tool preferences; voice:
 [memory_update.parameters.properties.content]
 One complete, self-contained third-person statement, e.g. "The user prefers direct, actionable explanations in Chinese." Avoid deictic words that refer back to this conversation.
 
+[memory_update.parameters.properties.valence]
+Optional. Emotional valence of this memory: -1 negative, 0 neutral, 1 positive; not the user's current mood. Omit to use the extractor/system default.
+
+[memory_update.parameters.properties.arousal]
+Optional. Emotional intensity of this memory: 0 calm, 1 intense.
+
+[memory_update.parameters.properties.importance]
+Optional. Long-term value: 0 not important, 1 very important. Judge from context; do not always give a high score.
+
+[memory_update.parameters.properties.pinned]
+Optional. true keeps this memory out of automatic forgetting; use only when the user explicitly asks to remember it long term. false does not remove an existing pin.
+
+[memory_reinforce]
+Explicitly reinforce a memory you actually used or relied on. Call only when you really used it in the answer; do not call after a search or read that you did not use. There is a cooldown, so repeated calls do not keep boosting it.
+
+[memory_reinforce.parameters.properties.id]
+Memory id to reinforce, e.g. mem_a1b2c3d4.
+
 [memory_edit]
 Edit the content of an existing memory. First obtain the entry id (e.g. mem_xxxxxxxx) via memory_read or memory_search_profile. Use only when content is outdated or wrong; for new information use memory_update.
 
@@ -141,6 +161,18 @@ Entry id, e.g. mem_a1b2c3d4.
 
 [memory_edit.parameters.properties.content]
 The full replacement content.
+
+[memory_edit.parameters.properties.valence]
+Optional replacement valence: -1 negative, 0 neutral, 1 positive. Omit to keep the current value.
+
+[memory_edit.parameters.properties.arousal]
+Optional replacement arousal: 0 calm, 1 intense. Omit to keep the current value.
+
+[memory_edit.parameters.properties.importance]
+Optional replacement long-term importance. Omit to keep the current value.
+
+[memory_edit.parameters.properties.pinned]
+Optional. true pins this memory, false unpins it. Omit to keep the current value.
 
 [memory_delete]
 Archive a memory (soft delete). Archived entries disappear from the memory summary and search results, but the user can still see and restore them in settings. First obtain the entry id via memory_read or memory_search_profile. Use only when the user clearly says a memory no longer holds.

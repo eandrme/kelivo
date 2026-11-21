@@ -46,6 +46,7 @@ void main() {
     double valence = 0.0,
     double arousal = 0.3,
     double importance = 0.0,
+    bool affectKnown = false,
     double strength = 1.0,
     DateTime? createdAt,
     DateTime? lastDecayAt,
@@ -78,6 +79,7 @@ void main() {
       'valence': valence,
       'arousal': arousal,
       'importance': importance,
+      'affectKnown': affectKnown,
       'strength': strength,
       'lastDecayAt': effectiveLastDecayAt?.microsecondsSinceEpoch,
       'archiveReason': archiveReason,
@@ -317,6 +319,7 @@ void main() {
       strength: 0.9,
       valence: -1.0,
       arousal: 1.0,
+      affectKnown: true,
     );
 
     await service(dryRun: false).apply();

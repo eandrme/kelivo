@@ -327,9 +327,19 @@ void main() {
         content: 'Important memory',
         source: MemorySource.extracted,
         importance: 0.8,
+        affectKnown: true,
       );
       expect(created.importance, 0.8);
+      expect(created.affectKnown, isTrue);
       expect((await memoryRepository.readAll()).single.importance, 0.8);
+
+      final affected = await memoryRepository.updateAffect(
+        created.id,
+        valence: 0.4,
+        arousal: 0.7,
+      );
+      expect(affected?.valence, 0.4);
+      expect(affected?.affectKnown, isTrue);
 
       final updated = await memoryRepository.setImportance(created.id, 0.2);
       expect(updated?.importance, 0.2);
@@ -342,12 +352,14 @@ void main() {
           content: 'Important batch',
           source: MemorySource.extracted,
           importance: 0.6,
+          affectKnown: true,
         ),
       ]);
       final batch = (await memoryRepository.readAll()).firstWhere(
         (entry) => entry.content == 'Important batch',
       );
       expect(batch.importance, 0.6);
+      expect(batch.affectKnown, isTrue);
     });
 
     test('recordRecalls boosts strength and resets decay', () async {
@@ -375,7 +387,17 @@ void main() {
         now.microsecondsSinceEpoch,
       );
 
-      await memoryRepository.recordRecalls([created.id], now: now, boost: 2);
+      final blocked = await memoryRepository.recordRecalls([
+        created.id,
+      ], now: now);
+      expect(blocked, 0);
+      expect((await memoryRepository.readAll()).single.recallCount, 1);
+
+      await memoryRepository.recordRecalls(
+        [created.id],
+        now: now.add(const Duration(hours: 7)),
+        boost: 2,
+      );
       final capped = (await memoryRepository.readAll()).single;
       expect(capped.strength, 1.0);
       expect(capped.recallCount, 2);

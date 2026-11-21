@@ -147,38 +147,42 @@ void main() {
           as Map<String, dynamic>;
 
   group('registration (§10.1 / §18.4 item 34)', () {
-    test('enableMemory registers six tools; chat_search needs past recall', () {
-      final withMemory = MemoryTools.buildDefinitions(
-        lang: MemoryPromptLang.en,
-        writeScope: MemoryWriteScope.alwaysGlobal,
-        enableMemory: true,
-        allowPastConversationRecall: false,
-      );
-      expect(withMemory.map(toolName).toList(), [
-        'memory_read',
-        'memory_search_profile',
-        'memory_update',
-        'memory_edit',
-        'memory_delete',
-        'update_user_profile',
-      ]);
+    test(
+      'enableMemory registers seven tools; chat_search needs past recall',
+      () {
+        final withMemory = MemoryTools.buildDefinitions(
+          lang: MemoryPromptLang.en,
+          writeScope: MemoryWriteScope.alwaysGlobal,
+          enableMemory: true,
+          allowPastConversationRecall: false,
+        );
+        expect(withMemory.map(toolName).toList(), [
+          'memory_read',
+          'memory_search_profile',
+          'memory_update',
+          'memory_reinforce',
+          'memory_edit',
+          'memory_delete',
+          'update_user_profile',
+        ]);
 
-      final withRecall = MemoryTools.buildDefinitions(
-        lang: MemoryPromptLang.en,
-        writeScope: MemoryWriteScope.alwaysGlobal,
-        enableMemory: false,
-        allowPastConversationRecall: true,
-      );
-      expect(withRecall.map(toolName).toList(), ['chat_search']);
+        final withRecall = MemoryTools.buildDefinitions(
+          lang: MemoryPromptLang.en,
+          writeScope: MemoryWriteScope.alwaysGlobal,
+          enableMemory: false,
+          allowPastConversationRecall: true,
+        );
+        expect(withRecall.map(toolName).toList(), ['chat_search']);
 
-      final none = MemoryTools.buildDefinitions(
-        lang: MemoryPromptLang.en,
-        writeScope: MemoryWriteScope.alwaysGlobal,
-        enableMemory: false,
-        allowPastConversationRecall: false,
-      );
-      expect(none, isEmpty);
-    });
+        final none = MemoryTools.buildDefinitions(
+          lang: MemoryPromptLang.en,
+          writeScope: MemoryWriteScope.alwaysGlobal,
+          enableMemory: false,
+          allowPastConversationRecall: false,
+        );
+        expect(none, isEmpty);
+      },
+    );
 
     test('write tools are withheld when writes are not allowed', () {
       final readOnly = MemoryTools.buildDefinitions(
@@ -747,6 +751,7 @@ void main() {
       expect(entry.arousal, 0.7);
       expect(entry.importance, 0.9);
       expect(entry.pinned, isTrue);
+      expect(entry.affectKnown, isTrue);
     });
 
     test('out-of-range affect is rejected', () async {
@@ -793,7 +798,7 @@ void main() {
       expect(payload['related'], isEmpty);
     });
 
-    test('search reinforces the top matched memory', () async {
+    test('search stays read-only and does not reinforce', () async {
       final created = await memoryRepository.create(
         scope: MemoryScope.global,
         type: MemoryType.workflow,
@@ -804,9 +809,8 @@ void main() {
         'query': 'Flutter performance',
       });
       final loaded = (await chatRepository.memoriesByIds([created.id])).single;
-      expect(loaded.recallCount, 1);
-      expect(loaded.lastRecalledAt, isNotNull);
-      expect(loaded.lastRecalledAt!.microsecondsSinceEpoch, greaterThan(0));
+      expect(loaded.recallCount, 0);
+      expect(loaded.lastRecalledAt, isNull);
     });
 
     test('1-hop relatedIds expansion capped at 10 (§18.1 item 15)', () async {
@@ -887,6 +891,42 @@ void main() {
     });
   });
 
+  group('memory_reinforce', () {
+    test('explicit reinforce boosts and respects cooldown', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: 'Used in the answer.',
+        source: MemorySource.manual,
+      );
+      await memoryRepository.updateForgettingStrengths({
+        created.id: 0.5,
+      }, decayedAt: DateTime.now().toUtc());
+
+      final raw = await call(MemoryTools.memoryReinforce, {'id': created.id});
+      final payload = decode(raw!);
+      expect(payload['action'], 'REINFORCE');
+      expect(payload['id'], created.id);
+      final boosted = (await chatRepository.memoriesByIds([created.id])).single;
+      expect(boosted.strength, closeTo(0.6, 0.0001));
+      expect(boosted.recallCount, 1);
+
+      final second = await call(MemoryTools.memoryReinforce, {
+        'id': created.id,
+      });
+      expect(decode(second!)['error'], 'reinforce_cooldown');
+      final after = (await chatRepository.memoriesByIds([created.id])).single;
+      expect(after.recallCount, 1);
+    });
+
+    test('missing id returns memory_not_found', () async {
+      final raw = await call(MemoryTools.memoryReinforce, {
+        'id': 'mem_missing1',
+      });
+      expect(decode(raw!)['error'], 'memory_not_found');
+    });
+  });
+
   group('memory_edit', () {
     test('happy path EDIT', () async {
       final created = await memoryRepository.create(
@@ -931,6 +971,7 @@ void main() {
       expect(entry.arousal, 0.8);
       expect(entry.importance, 0.7);
       expect(entry.pinned, isTrue);
+      expect(entry.affectKnown, isTrue);
     });
 
     test('memory_not_found for missing/archived/invisible', () async {
