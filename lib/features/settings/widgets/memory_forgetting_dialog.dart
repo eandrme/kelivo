@@ -6,6 +6,7 @@ import '../../../core/providers/memory_provider_v2.dart';
 import '../../../core/services/memory/memory_forgetting_service.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/widgets/ios_checkbox.dart';
 import 'memory_ui.dart';
 
 bool _isZh(BuildContext context) =>
@@ -18,8 +19,8 @@ String _emptyLabel(BuildContext context) =>
     _isZh(context) ? '没有需要遗忘的记忆' : 'Nothing to forget';
 
 String _candidateHint(BuildContext context) => _isZh(context)
-    ? '以下记忆会因强度过低被归档，正文保留，可恢复。'
-    : 'These memories will be archived for low strength. Content is kept and restorable.';
+    ? '以下记忆会因强度过低被归档，正文保留，可恢复；默认全选，可取消不希望归档的条目。'
+    : 'These memories will be archived for low strength. Content is kept and restorable. All are selected by default; uncheck any you want to keep.';
 
 String _baselineHint(BuildContext context, int count) => _isZh(context)
     ? '有 $count 条旧记忆还没有衰减起点。'
@@ -55,6 +56,7 @@ class _MemoryForgettingDialog extends StatefulWidget {
 class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
   MemoryForgettingReport? _report;
   Map<String, MemoryEntry> _entries = const {};
+  Set<String> _selected = const {};
   bool _loading = true;
   bool _applying = false;
   Object? _error;
@@ -83,6 +85,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
       setState(() {
         _report = report;
         _entries = {for (final entry in all) entry.id: entry};
+        _selected = report.archiveIds.toSet();
         _loading = false;
         _applying = false;
       });
@@ -98,12 +101,12 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
 
   Future<void> _applyCandidates() async {
     final report = _report;
-    if (report == null || report.archiveIds.isEmpty || _applying) return;
+    if (report == null || _selected.isEmpty || _applying) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(memoryForgettingLabel(context)),
-        content: Text(_applyConfirm(context, report.archiveIds.length)),
+        content: Text(_applyConfirm(context, _selected.length)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -127,7 +130,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
         repository: provider.repository,
         dryRun: false,
       );
-      await service.apply(onlyIds: report.archiveIds.toSet());
+      await service.apply(onlyIds: _selected.toSet());
       await provider.refreshAll();
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -230,8 +233,22 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
                         height: 12,
                         color: cs.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      itemBuilder: (_, index) =>
-                          _CandidateTile(entry: candidates[index]),
+                      itemBuilder: (_, index) {
+                        final entry = candidates[index];
+                        return _CandidateTile(
+                          entry: entry,
+                          selected: _selected.contains(entry.id),
+                          onChanged: (value) => setState(() {
+                            if (value) {
+                              _selected = {..._selected, entry.id};
+                            } else {
+                              _selected = _selected
+                                  .where((id) => id != entry.id)
+                                  .toSet();
+                            }
+                          }),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -267,7 +284,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
           child: Text(l10n.assistantEditPreviewTitle),
         ),
         TextButton(
-          onPressed: busy || candidates.isEmpty ? null : _applyCandidates,
+          onPressed: busy || _selected.isEmpty ? null : _applyCandidates,
           child: Text(l10n.statsPageCustomRangeApply),
         ),
         TextButton(
@@ -280,9 +297,15 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
 }
 
 class _CandidateTile extends StatelessWidget {
-  const _CandidateTile({required this.entry});
+  const _CandidateTile({
+    required this.entry,
+    required this.selected,
+    required this.onChanged,
+  });
 
   final MemoryEntry entry;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -293,6 +316,16 @@ class _CandidateTile extends StatelessWidget {
       children: [
         Row(
           children: [
+            IosCheckbox(
+              value: selected,
+              size: 20,
+              hitTestSize: 28,
+              borderWidth: 1.6,
+              activeColor: cs.primary,
+              borderColor: cs.primary.withValues(alpha: 0.55),
+              onChanged: onChanged,
+            ),
+            const SizedBox(width: 4),
             MemoryBadge(
               label: memoryTypeLabel(l10n, entry.type),
               color: memoryTypeColor(cs, entry.type),

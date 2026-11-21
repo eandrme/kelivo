@@ -1566,6 +1566,14 @@ class MemoryBadge extends StatelessWidget {
   }
 }
 
+String _archiveReasonLabel(BuildContext context, String reason) {
+  final isZh = Localizations.localeOf(context).languageCode == 'zh';
+  if (reason == 'forgetting:strength<0.3') {
+    return isZh ? '自动遗忘：强度过低' : 'Automatically forgotten: low strength';
+  }
+  return reason;
+}
+
 class MemoryAffectStats extends StatelessWidget {
   const MemoryAffectStats({super.key, required this.entry});
 
@@ -1854,6 +1862,18 @@ class MemoryEntryCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               MemoryAffectStats(entry: entry),
+              if (entry.status == MemoryStatus.archived &&
+                  entry.archiveReason != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _archiveReasonLabel(context, entry.archiveReason!),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.tertiary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 meta,
