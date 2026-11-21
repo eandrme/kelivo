@@ -1666,9 +1666,8 @@ class MemoryBadge extends StatelessWidget {
 }
 
 String _archiveReasonLabel(BuildContext context, String reason) {
-  final isZh = Localizations.localeOf(context).languageCode == 'zh';
   if (reason == 'forgetting:strength<0.3') {
-    return isZh ? '自动遗忘：强度过低' : 'Automatically forgotten: low strength';
+    return AppLocalizations.of(context)!.memoryEntryAutomaticForgetReason;
   }
   return reason;
 }

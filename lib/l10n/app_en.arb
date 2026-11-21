@@ -3818,6 +3818,14 @@
   "memoryModelMissingNotice": "Select a memory processing model in Settings → Memory first.",
   "memoryModelMissingGoSelect": "Choose model",
   "memoryEntriesPageTitle": "All memories",
+  "memoryForgettingTitle": "Automatic forgetting",
+  "memoryForgettingEmpty": "Nothing to forget",
+  "memoryForgettingCandidateHint": "These memories will be archived for low strength. Content is kept and restorable. All are selected by default; uncheck any you want to keep.",
+  "memoryForgettingBaselineHint": "{count} legacy memories have no decay baseline yet.",
+  "memoryForgettingApplyConfirm": "Archive {count} memories? Their content is kept and can be restored.",
+  "memoryForgettingBaselineConfirm": "Start decay for {count} legacy memories from now? Nothing is archived.",
+  "memoryForgettingInitialize": "Initialize decay",
+  "memoryEntryAutomaticForgetReason": "Automatically forgotten: low strength",
   "userProfilePageTitle": "User profile",
   "userProfilePreferredName": "Preferred name",
   "userProfilePreferredNameHint": "How the model should address you — unrelated to the sidebar display name",
@@ -15368,6 +15376,45 @@
   },
   "@memoryEntriesPageTitle": {
     "description": "Title of the memory entries page/dialog listing all stored memories."
+  },
+  "@memoryForgettingTitle": {
+    "description": "Title of the automatic forgetting dialog and its toolbar tooltip."
+  },
+  "@memoryForgettingEmpty": {
+    "description": "Empty-state message when automatic forgetting finds no candidates."
+  },
+  "@memoryForgettingCandidateHint": {
+    "description": "Explanation above the list of memories that automatic forgetting proposes to archive."
+  },
+  "@memoryForgettingBaselineHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Message explaining that some legacy memories have no decay baseline yet; {count} is the number."
+  },
+  "@memoryForgettingApplyConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Confirmation question before archiving candidates; {count} is the number."
+  },
+  "@memoryForgettingBaselineConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Confirmation question before initializing decay baselines; {count} is the number."
+  },
+  "@memoryForgettingInitialize": {
+    "description": "Button that starts decay tracking for legacy memories from now."
+  },
+  "@memoryEntryAutomaticForgetReason": {
+    "description": "Archive reason label shown on memories archived by automatic forgetting."
   },
   "@userProfilePageTitle": {
     "description": "Title of the user profile page/dialog showing the user's profile fields."

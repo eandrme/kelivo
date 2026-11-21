@@ -9,33 +9,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/widgets/ios_checkbox.dart';
 import 'memory_ui.dart';
 
-bool _isZh(BuildContext context) =>
-    Localizations.localeOf(context).languageCode == 'zh';
-
 String memoryForgettingLabel(BuildContext context) =>
-    _isZh(context) ? '自动遗忘' : 'Automatic forgetting';
-
-String _emptyLabel(BuildContext context) =>
-    _isZh(context) ? '没有需要遗忘的记忆' : 'Nothing to forget';
-
-String _candidateHint(BuildContext context) => _isZh(context)
-    ? '以下记忆会因强度过低被归档，正文保留，可恢复；默认全选，可取消不希望归档的条目。'
-    : 'These memories will be archived for low strength. Content is kept and restorable. All are selected by default; uncheck any you want to keep.';
-
-String _baselineHint(BuildContext context, int count) => _isZh(context)
-    ? '有 $count 条旧记忆还没有衰减起点。'
-    : '$count legacy memories have no decay baseline yet.';
-
-String _applyConfirm(BuildContext context, int count) => _isZh(context)
-    ? '将归档 $count 条记忆，正文会保留，可恢复。'
-    : 'Archive $count memories? Their content is kept and can be restored.';
-
-String _baselineConfirm(BuildContext context, int count) => _isZh(context)
-    ? '从当前时间开始计算这 $count 条旧记忆的衰减？不会立即归档。'
-    : 'Start decay for $count legacy memories from now? Nothing is archived.';
-
-String _baselineLabel(BuildContext context) =>
-    _isZh(context) ? '初始化衰减' : 'Initialize decay';
+    AppLocalizations.of(context)!.memoryForgettingTitle;
 
 /// Preview and apply automatic forgetting for the current memory set.
 Future<void> showMemoryForgettingDialog(BuildContext context) {
@@ -102,21 +77,20 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
   Future<void> _applyCandidates() async {
     final report = _report;
     if (report == null || _selected.isEmpty || _applying) return;
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(memoryForgettingLabel(context)),
-        content: Text(_applyConfirm(context, _selected.length)),
+        title: Text(l10n.memoryForgettingTitle),
+        content: Text(l10n.memoryForgettingApplyConfirm(_selected.length)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(AppLocalizations.of(context)!.settingsSearchCancel),
+            child: Text(l10n.settingsSearchCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              AppLocalizations.of(context)!.statsPageCustomRangeApply,
-            ),
+            child: Text(l10n.statsPageCustomRangeApply),
           ),
         ],
       ),
@@ -154,8 +128,12 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(memoryForgettingLabel(context)),
-        content: Text(_baselineConfirm(context, report.baselineCount)),
+        title: Text(AppLocalizations.of(context)!.memoryForgettingTitle),
+        content: Text(
+          AppLocalizations.of(
+            context,
+          )!.memoryForgettingBaselineConfirm(report.baselineCount),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -200,7 +178,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
     final report = _report;
     final busy = _loading || _applying;
     return AlertDialog(
-      title: Text(memoryForgettingLabel(context)),
+      title: Text(l10n.memoryForgettingTitle),
       content: SizedBox(
         width: 520,
         child: _loading
@@ -216,7 +194,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _candidateHint(context),
+                    l10n.memoryForgettingCandidateHint,
                     style: TextStyle(
                       fontSize: 12.5,
                       height: 1.35,
@@ -258,11 +236,11 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
                 children: [
                   Icon(Lucide.CheckCircle, size: 36, color: cs.primary),
                   const SizedBox(height: 8),
-                  Text(_emptyLabel(context)),
+                  Text(l10n.memoryForgettingEmpty),
                   if (report != null && report.baselineCount > 0) ...[
                     const SizedBox(height: 10),
                     Text(
-                      _baselineHint(context, report.baselineCount),
+                      l10n.memoryForgettingBaselineHint(report.baselineCount),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12.5,
@@ -272,7 +250,7 @@ class _MemoryForgettingDialogState extends State<_MemoryForgettingDialog> {
                     const SizedBox(height: 8),
                     FilledButton(
                       onPressed: busy ? null : _initializeBaseline,
-                      child: Text(_baselineLabel(context)),
+                      child: Text(l10n.memoryForgettingInitialize),
                     ),
                   ],
                 ],

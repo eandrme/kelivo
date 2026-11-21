@@ -7940,6 +7940,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get memoryEntriesPageTitle => '全部记忆';
 
   @override
+  String get memoryForgettingTitle => '自动遗忘';
+
+  @override
+  String get memoryForgettingEmpty => '没有需要遗忘的记忆';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      '以下记忆会因强度过低被归档，正文保留，可恢复；默认全选，可取消不希望归档的条目。';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '有 $count 条旧记忆还没有衰减起点。';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return '将归档 $count 条记忆，正文会保留，可恢复。';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return '从当前时间开始计算这 $count 条旧记忆的衰减？不会立即归档。';
+  }
+
+  @override
+  String get memoryForgettingInitialize => '初始化衰减';
+
+  @override
+  String get memoryEntryAutomaticForgetReason => '自动遗忘：强度过低';
+
+  @override
   String get userProfilePageTitle => '用户画像';
 
   @override
@@ -24356,6 +24387,37 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get memoryEntriesPageTitle => '全部记忆';
+
+  @override
+  String get memoryForgettingTitle => '自动遗忘';
+
+  @override
+  String get memoryForgettingEmpty => '没有需要遗忘的记忆';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      '以下记忆会因强度过低被归档，正文保留，可恢复；默认全选，可取消不希望归档的条目。';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '有 $count 条旧记忆还没有衰减起点。';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return '将归档 $count 条记忆，正文会保留，可恢复。';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return '从当前时间开始计算这 $count 条旧记忆的衰减？不会立即归档。';
+  }
+
+  @override
+  String get memoryForgettingInitialize => '初始化衰减';
+
+  @override
+  String get memoryEntryAutomaticForgetReason => '自动遗忘：强度过低';
 
   @override
   String get userProfilePageTitle => '用户画像';
@@ -40780,6 +40842,37 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get memoryEntriesPageTitle => '全部記憶';
+
+  @override
+  String get memoryForgettingTitle => '自動遺忘';
+
+  @override
+  String get memoryForgettingEmpty => '沒有需要遺忘的記憶';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      '以下記憶會因強度過低而被封存，正文保留，可恢復；預設全選，可取消不希望封存的項目。';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '有 $count 條舊記憶還沒有衰減起點。';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return '將封存 $count 條記憶，正文會保留，可恢復。';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return '從目前時間開始計算這 $count 條舊記憶的衰減？不會立即封存。';
+  }
+
+  @override
+  String get memoryForgettingInitialize => '初始化衰減';
+
+  @override
+  String get memoryEntryAutomaticForgetReason => '自動遺忘：強度過低';
 
   @override
   String get userProfilePageTitle => '使用者畫像';

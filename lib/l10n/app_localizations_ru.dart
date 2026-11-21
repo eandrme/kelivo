@@ -8412,6 +8412,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get memoryEntriesPageTitle => 'Все воспоминания';
 
   @override
+  String get memoryForgettingTitle => 'Автоматическое забывание';
+
+  @override
+  String get memoryForgettingEmpty => 'Нет воспоминаний для забывания';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      'Эти воспоминания будут отправлены в архив из-за низкой силы. Содержимое сохраняется и может быть восстановлено. По умолчанию выбраны все; снимите отметки с тех, что хотите оставить.';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return 'У $count старых воспоминаний ещё нет точки начала затухания.';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return 'Архивировать $count воспоминаний? Содержимое сохраняется и может быть восстановлено.';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return 'Начать затухание $count старых воспоминаний с текущего момента? Сразу в архив ничего не попадёт.';
+  }
+
+  @override
+  String get memoryForgettingInitialize => 'Инициализировать затухание';
+
+  @override
+  String get memoryEntryAutomaticForgetReason =>
+      'Автоматически забыто: слишком низкая сила';
+
+  @override
   String get userProfilePageTitle => 'Профиль пользователя';
 
   @override

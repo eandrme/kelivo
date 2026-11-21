@@ -14989,6 +14989,54 @@ abstract class AppLocalizations {
   /// **'All memories'**
   String get memoryEntriesPageTitle;
 
+  /// Title of the automatic forgetting dialog and its toolbar tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic forgetting'**
+  String get memoryForgettingTitle;
+
+  /// Empty-state message when automatic forgetting finds no candidates.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to forget'**
+  String get memoryForgettingEmpty;
+
+  /// Explanation above the list of memories that automatic forgetting proposes to archive.
+  ///
+  /// In en, this message translates to:
+  /// **'These memories will be archived for low strength. Content is kept and restorable. All are selected by default; uncheck any you want to keep.'**
+  String get memoryForgettingCandidateHint;
+
+  /// Message explaining that some legacy memories have no decay baseline yet; {count} is the number.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} legacy memories have no decay baseline yet.'**
+  String memoryForgettingBaselineHint(int count);
+
+  /// Confirmation question before archiving candidates; {count} is the number.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive {count} memories? Their content is kept and can be restored.'**
+  String memoryForgettingApplyConfirm(int count);
+
+  /// Confirmation question before initializing decay baselines; {count} is the number.
+  ///
+  /// In en, this message translates to:
+  /// **'Start decay for {count} legacy memories from now? Nothing is archived.'**
+  String memoryForgettingBaselineConfirm(int count);
+
+  /// Button that starts decay tracking for legacy memories from now.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialize decay'**
+  String get memoryForgettingInitialize;
+
+  /// Archive reason label shown on memories archived by automatic forgetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically forgotten: low strength'**
+  String get memoryEntryAutomaticForgetReason;
+
   /// Title of the user profile page/dialog showing the user's profile fields.
   ///
   /// In en, this message translates to:

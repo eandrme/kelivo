@@ -8290,6 +8290,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryEntriesPageTitle => 'All memories';
 
   @override
+  String get memoryForgettingTitle => 'Automatic forgetting';
+
+  @override
+  String get memoryForgettingEmpty => 'Nothing to forget';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      'These memories will be archived for low strength. Content is kept and restorable. All are selected by default; uncheck any you want to keep.';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '$count legacy memories have no decay baseline yet.';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return 'Archive $count memories? Their content is kept and can be restored.';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return 'Start decay for $count legacy memories from now? Nothing is archived.';
+  }
+
+  @override
+  String get memoryForgettingInitialize => 'Initialize decay';
+
+  @override
+  String get memoryEntryAutomaticForgetReason =>
+      'Automatically forgotten: low strength';
+
+  @override
   String get userProfilePageTitle => 'User profile';
 
   @override

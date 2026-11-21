@@ -5047,5 +5047,13 @@
   "backupEncryptionChangePassword": "57b03a271968dd419d630176957f882486f986f99f6534390ab437978505d4d5",
   "backupMacKeychainNeedsUnlock": "9d82d8d175ecde0fb03c421530a92a92358f55d479a64ce7bedc4ffc71ca3193",
   "backupMacOpenKeychainAccess": "aa1451af372fd9a0c9c463fcbdf199f77fee42b4563311d4afae134a93497852",
-  "backupMacKeychainAccessDenied": "8bf323d77e6029949077003437c5279a68cde3fd5ae0fb8692a90126d17a5252"
+  "backupMacKeychainAccessDenied": "8bf323d77e6029949077003437c5279a68cde3fd5ae0fb8692a90126d17a5252",
+  "memoryForgettingTitle": "9844b22293a40f73438601dc522438e92e1bc19190e51bc6fb7c3e404f9c323c",
+  "memoryForgettingEmpty": "11609b83013767195cb3cb1c8fdb43d950f93458af6d29f30a3d0727c307cdb8",
+  "memoryForgettingCandidateHint": "0715338603ea09387a1f5d86e7e6f6af55d739a64ac6bc01e5bf519d4b07528d",
+  "memoryForgettingBaselineHint": "630b790fd7abd74b77b85999b2f46151322b6b0aabe7f518c100fe1208dcf7b8",
+  "memoryForgettingApplyConfirm": "72230ee50f529869217989e8932c798baf98f2c5ca170f40651db3c09e4ec63b",
+  "memoryForgettingBaselineConfirm": "c18d9daf433db1b2bb6dd5123acff3c51ef7b00fbfaa733c24f3373c3e68cb2d",
+  "memoryForgettingInitialize": "25d7a58bf56d41760bfa505f799dbb1342ad9a259946e7d0d41e6826385441a8",
+  "memoryEntryAutomaticForgetReason": "ee7a4e1fd1eecbe4da2b57aaac4ae908941c82425c6c078d75609c052e335e62"
 }

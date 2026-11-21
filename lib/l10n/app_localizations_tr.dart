@@ -8354,6 +8354,38 @@ class AppLocalizationsTr extends AppLocalizations {
   String get memoryEntriesPageTitle => 'Tüm anılar';
 
   @override
+  String get memoryForgettingTitle => 'Otomatik unutma';
+
+  @override
+  String get memoryForgettingEmpty => 'Unutulacak anı yok';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      'Bu anılar düşük güç nedeniyle arşivlenecek. İçerik korunur ve geri yüklenebilir. Varsayılan olarak tümü seçilidir; saklamak istediklerinizin işaretini kaldırın.';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '$count eski anının henüz bir bozulma başlangıcı yok.';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return '$count anı arşivlensin mi? İçerik korunur ve geri yüklenebilir.';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return 'Bu $count eski anı için bozulmayı şu andan itibaren başlat? Hemen arşivlenmez.';
+  }
+
+  @override
+  String get memoryForgettingInitialize => 'Bozulmayı başlat';
+
+  @override
+  String get memoryEntryAutomaticForgetReason =>
+      'Otomatik unutuldu: güç çok düşük';
+
+  @override
   String get userProfilePageTitle => 'Kullanıcı profili';
 
   @override

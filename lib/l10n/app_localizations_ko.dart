@@ -8061,6 +8061,37 @@ class AppLocalizationsKo extends AppLocalizations {
   String get memoryEntriesPageTitle => '전체 메모리';
 
   @override
+  String get memoryForgettingTitle => '자동 망각';
+
+  @override
+  String get memoryForgettingEmpty => '잊을 기억이 없습니다';
+
+  @override
+  String get memoryForgettingCandidateHint =>
+      '강도가 낮아 보관될 기억입니다. 내용은 유지되며 복구할 수 있습니다. 기본적으로 모두 선택되어 있으며, 보관하지 않을 항목은 선택을 해제하세요.';
+
+  @override
+  String memoryForgettingBaselineHint(int count) {
+    return '$count개의 오래된 기억에 아직 감쇠 기준점이 없습니다.';
+  }
+
+  @override
+  String memoryForgettingApplyConfirm(int count) {
+    return '$count개의 기억을 보관 처리합니다. 내용은 유지되며 복구할 수 있습니다.';
+  }
+
+  @override
+  String memoryForgettingBaselineConfirm(int count) {
+    return '지금부터 이 오래된 기억 $count개의 감쇠를 시작할까요? 즉시 보관되지는 않습니다.';
+  }
+
+  @override
+  String get memoryForgettingInitialize => '감쇠 기준 초기화';
+
+  @override
+  String get memoryEntryAutomaticForgetReason => '자동 망각: 강도가 너무 낮음';
+
+  @override
   String get userProfilePageTitle => '사용자 프로필';
 
   @override
