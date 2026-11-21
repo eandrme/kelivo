@@ -27,6 +27,14 @@ class _MemoryForgettingDebugDialog extends StatefulWidget {
 
 class _MemoryForgettingDebugDialogState
     extends State<_MemoryForgettingDebugDialog> {
+  static const Set<String> _debugIds = {
+    'mem_d00d0001',
+    'mem_d00d0002',
+    'mem_d00d0003',
+    'mem_d00d0004',
+    'mem_d00d0005',
+  };
+
   String _output = 'Ready. Seed test memories, then run Preview or Apply.';
   bool _busy = false;
 
@@ -129,18 +137,158 @@ class _MemoryForgettingDebugDialogState
   Future<void> _applyDebug() {
     return _run(() async {
       final provider = context.read<MemoryProviderV2>();
-      final ids = provider.entries
-          .where((entry) => entry.id.startsWith('mem_d00d'))
-          .map((entry) => entry.id)
-          .toSet();
-      if (ids.isEmpty) return 'No debug entries. Tap Seed first.';
       final service = MemoryForgettingService(
         repository: provider.repository,
         dryRun: false,
       );
-      final report = await service.apply(onlyIds: ids);
+      final report = await service.apply(onlyIds: _debugIds);
+      if (report.scanned == 0) return 'No debug entries. Tap Seed first.';
       await provider.refreshAll();
       return 'APPLIED DEBUG\n${_formatReport(report)}';
+    });
+  }
+
+  Future<void> _runAll() {
+    return _run(() async {
+      final provider = context.read<MemoryProviderV2>();
+      final repository = provider.repository;
+      final failures = <String>[];
+      void check(bool ok, String message) {
+        if (!ok) failures.add(message);
+      }
+
+      await _clearDebugMemories(repository);
+      await provider.refreshAll();
+
+      final beforeEntries = await repository.readAll();
+      final realIds = beforeEntries
+          .map((entry) => entry.id)
+          .where((id) => !id.startsWith('mem_d00d'))
+          .toSet();
+      final realBefore = {
+        for (final entry in beforeEntries)
+          if (realIds.contains(entry.id)) entry.id: entry,
+      };
+
+      final realPreview = await provider.forgetting.preview();
+      if (realPreview.archiveIds.isNotEmpty) {
+        return 'RUN ALL: ABORT\n'
+            'real data already has ${realPreview.archiveIds.length} archive '
+            'candidates; refusing to apply baseline.\n'
+            '${_formatReport(realPreview)}';
+      }
+
+      final baseline = await MemoryForgettingService(
+        repository: repository,
+        dryRun: false,
+      ).apply();
+      check(
+        baseline.archivedCount == 0,
+        'baseline archived ${baseline.archivedCount} real entries',
+      );
+      await provider.refreshAll();
+
+      final seeded = await _seedDebugMemories(repository);
+      check(seeded == _debugIds.length, 'seed count=$seeded');
+      await provider.refreshAll();
+
+      final preview = await provider.forgetting.preview(onlyIds: _debugIds);
+      check(preview.scanned == 5, 'debug preview scanned=${preview.scanned}');
+      check(
+        preview.exemptCount == 2,
+        'debug preview exempt=${preview.exemptCount}',
+      );
+      check(
+        preview.archiveIds.length == 1 &&
+            preview.archiveIds.first == 'mem_d00d0001',
+        'debug candidates=${preview.archiveIds.join(',')}',
+      );
+
+      final debugApply = await MemoryForgettingService(
+        repository: repository,
+        dryRun: false,
+      ).apply(onlyIds: _debugIds);
+      check(
+        debugApply.archivedCount == 1,
+        'debug apply archived=${debugApply.archivedCount}',
+      );
+      await provider.refreshAll();
+
+      final afterApply = await repository.readAll();
+      MemoryEntry find(String id) =>
+          afterApply.firstWhere((entry) => entry.id == id);
+      final weak = find('mem_d00d0001');
+      check(weak.status == MemoryStatus.archived, 'weak not archived');
+      check(
+        weak.archiveReason == 'forgetting:strength<0.3',
+        'weak reason=${weak.archiveReason}',
+      );
+      final young = find('mem_d00d0002');
+      check(young.status == MemoryStatus.active, 'young was archived');
+      final identity = find('mem_d00d0003');
+      check(
+        identity.status == MemoryStatus.active && identity.strength == 0.1,
+        'identity changed',
+      );
+      final instruction = find('mem_d00d0004');
+      check(
+        instruction.status == MemoryStatus.active &&
+            instruction.strength == 0.1,
+        'instruction changed',
+      );
+      final keep = find('mem_d00d0005');
+      check(keep.status == MemoryStatus.active, 'keep was archived');
+
+      await repository.restore('mem_d00d0001');
+      await provider.refreshAll();
+      final restored = (await repository.readAll()).firstWhere(
+        (entry) => entry.id == 'mem_d00d0001',
+      );
+      check(restored.status == MemoryStatus.active, 'restore status failed');
+      check(restored.archiveReason == null, 'restore reason not cleared');
+      check(restored.strength == 1.0, 'restore strength=${restored.strength}');
+      check(
+        restored.lastDecayAt == null,
+        'restore lastDecayAt=${restored.lastDecayAt}',
+      );
+
+      final afterEntries = await repository.readAll();
+      for (final entry in realBefore.values) {
+        final after = afterEntries.firstWhere((item) => item.id == entry.id);
+        check(after.status == entry.status, 'real ${entry.id} status changed');
+        check(
+          after.strength == entry.strength,
+          'real ${entry.id} strength changed',
+        );
+      }
+
+      await _clearDebugMemories(repository);
+      await provider.refreshAll();
+      final finalEntries = await repository.readAll();
+      check(finalEntries.length == beforeEntries.length, 'real count changed');
+      check(
+        finalEntries.every((entry) => !entry.id.startsWith('mem_d00d')),
+        'debug entries remain',
+      );
+
+      final lines = [
+        failures.isEmpty ? 'RUN ALL: PASS' : 'RUN ALL: FAIL',
+        'real entries: ${realBefore.length}',
+        'baseline: updated=${baseline.updatedCount} '
+            'archived=${baseline.archivedCount}',
+        'debug preview: scanned=${preview.scanned} '
+            'exempt=${preview.exemptCount} '
+            'candidates=${preview.archiveIds.join(',')}',
+        'debug apply: updated=${debugApply.updatedCount} '
+            'archived=${debugApply.archivedCount}',
+        'restore: status=${restored.status} strength=${restored.strength} '
+            'reason=${restored.archiveReason}',
+        if (failures.isNotEmpty) ...[
+          '',
+          ...failures.map((failure) => '- $failure'),
+        ],
+      ];
+      return lines.join('\n');
     });
   }
 
@@ -270,6 +418,10 @@ class _MemoryForgettingDebugDialogState
                   FilledButton(
                     onPressed: _busy ? null : _seed,
                     child: const Text('Seed'),
+                  ),
+                  FilledButton(
+                    onPressed: _busy ? null : _runAll,
+                    child: const Text('Run all'),
                   ),
                   FilledButton.tonal(
                     onPressed: _busy ? null : _preview,
