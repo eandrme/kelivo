@@ -12,7 +12,21 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
+        maven("https://repo.maven.apache.org/maven2")
         gradlePluginPortal()
+    }
+
+    resolutionStrategy {
+        eachPlugin {
+            val version = requested.version
+            if (requested.id.id.startsWith("org.jetbrains.kotlin") &&
+                version != null
+            ) {
+                useModule(
+                    "org.jetbrains.kotlin:kotlin-gradle-plugin:$version",
+                )
+            }
+        }
     }
 }
 
