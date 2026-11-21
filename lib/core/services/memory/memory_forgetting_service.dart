@@ -9,6 +9,7 @@ class MemoryForgettingReport {
     required this.scanned,
     required this.exemptCount,
     required this.baselineCount,
+    required this.pinnedCount,
     required Map<MemoryType, int> byType,
     required List<String> archiveIds,
     required Map<String, int> strengthBuckets,
@@ -29,6 +30,9 @@ class MemoryForgettingReport {
 
   /// Entries that have no decay timestamp yet and start a fresh baseline.
   final int baselineCount;
+
+  /// Pinned entries skipped by this pass.
+  final int pinnedCount;
 
   /// Active entry counts by type, including exempt types.
   final Map<MemoryType, int> byType;
@@ -57,8 +61,9 @@ class MemoryForgettingReport {
 
   String get summary =>
       'scanned=$scanned exempt=$exemptCount baseline=$baselineCount '
-      'updated=$updatedCount archiveCandidates=${archiveIds.length} '
-      'archived=$archivedCount dryRun=$dryRun';
+      'pinned=$pinnedCount updated=$updatedCount '
+      'archiveCandidates=${archiveIds.length} archived=$archivedCount '
+      'dryRun=$dryRun';
 }
 
 /// Strength decay and automatic archiving for V2 memories.
@@ -119,6 +124,7 @@ class MemoryForgettingService {
     final buckets = <String, int>{};
     var exemptCount = 0;
     var baselineCount = 0;
+    var pinnedCount = 0;
 
     for (final entry in all) {
       if (entry.status != MemoryStatus.active) continue;
@@ -127,6 +133,10 @@ class MemoryForgettingService {
       byType.update(entry.type, (count) => count + 1, ifAbsent: () => 1);
       if (exemptTypes.contains(entry.type)) {
         exemptCount++;
+        continue;
+      }
+      if (entry.pinned) {
+        pinnedCount++;
         continue;
       }
 
@@ -171,6 +181,7 @@ class MemoryForgettingService {
       scanned: byType.values.fold(0, (sum, count) => sum + count),
       exemptCount: exemptCount,
       baselineCount: baselineCount,
+      pinnedCount: pinnedCount,
       byType: byType,
       archiveIds: archiveIds,
       strengthBuckets: buckets,

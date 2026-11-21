@@ -11,7 +11,7 @@ void main() {
       const raw = '''
 Here you go:
 <extracted>
-<item type="identity" valence="-0.4" arousal="0.7">用户是大学生。</item>
+<item type="identity" valence="-0.4" arousal="0.7" pinned="true">用户是大学生。</item>
 <item type="workflow" scope="assistant">用户偏好 Flutter。</item>
 </extracted>
 ''';
@@ -22,9 +22,25 @@ Here you go:
       expect(r.items[0].content, '用户是大学生。');
       expect(r.items[0].valence, -0.4);
       expect(r.items[0].arousal, 0.7);
+      expect(r.items[0].pinned, isTrue);
       expect(r.items[1].scopeAttr, 'assistant');
       expect(r.items[1].valence, 0.0);
       expect(r.items[1].arousal, 0.3);
+      expect(r.items[1].pinned, isFalse);
+    });
+
+    test('only true-like pinned attributes pin the item', () {
+      const raw = '''
+<extracted>
+<item type="voice" pinned="true">A</item>
+<item type="voice" pinned="1">B</item>
+<item type="voice" pinned="false">C</item>
+<item type="voice">D</item>
+</extracted>
+''';
+      final r = MemoryExtractor.parse(raw);
+      expect(r.ok, isTrue);
+      expect(r.items.map((item) => item.pinned), [true, true, false, false]);
     });
 
     test('parses optional affect attributes and sanitizes bad values', () {
@@ -92,8 +108,10 @@ Here you go:
     test('extract prompts document optional affect attributes', () {
       expect(MemoryPrompts.extractZh, contains('valence='));
       expect(MemoryPrompts.extractZh, contains('arousal='));
+      expect(MemoryPrompts.extractZh, contains('pinned='));
       expect(MemoryPrompts.extractEn, contains('valence='));
       expect(MemoryPrompts.extractEn, contains('arousal='));
+      expect(MemoryPrompts.extractEn, contains('pinned='));
     });
 
     test('appends toolDefault scope rule', () {

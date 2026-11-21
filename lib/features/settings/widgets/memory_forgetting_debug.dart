@@ -302,8 +302,8 @@ class _MemoryForgettingDebugDialogState
     return [
       'dryRun=${report.dryRun} applied=${report.applied}',
       'scanned=${report.scanned} exempt=${report.exemptCount} '
-          'baseline=${report.baselineCount} updated=${report.updatedCount} '
-          'archived=${report.archivedCount}',
+          'baseline=${report.baselineCount} pinned=${report.pinnedCount} '
+          'updated=${report.updatedCount} archived=${report.archivedCount}',
       'byType: $byType',
       'strength: $buckets',
       'candidates: ${report.archiveIds.join(', ')}',

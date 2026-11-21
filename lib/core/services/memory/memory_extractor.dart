@@ -10,6 +10,7 @@ class MemoryExtractedItem {
     this.scopeAttr,
     this.valence = 0.0,
     this.arousal = 0.3,
+    this.pinned = false,
   });
 
   final MemoryType type;
@@ -24,6 +25,9 @@ class MemoryExtractedItem {
 
   /// Optional emotional intensity of this memory, clamped to [0, 1].
   final double arousal;
+
+  /// Optional explicit request to keep this memory out of automatic decay.
+  final bool pinned;
 }
 
 /// Extract parse outcome.
@@ -71,6 +75,10 @@ abstract final class MemoryExtractor {
   );
   static final RegExp _arousalAttrRe = RegExp(
     r'''arousal\s*=\s*["']([^"']*)["']''',
+    caseSensitive: false,
+  );
+  static final RegExp _pinnedAttrRe = RegExp(
+    r'''pinned\s*=\s*["'](true|1|yes)["']''',
     caseSensitive: false,
   );
 
@@ -165,6 +173,7 @@ abstract final class MemoryExtractor {
             min: 0.0,
             max: 1.0,
           ),
+          pinned: _pinnedAttrRe.hasMatch(attrs),
         ),
       );
     }

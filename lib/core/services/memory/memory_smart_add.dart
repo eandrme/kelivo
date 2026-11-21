@@ -75,6 +75,7 @@ class SmartAddItem {
     this.assistantId,
     this.valence = 0.0,
     this.arousal = 0.3,
+    this.pinned = false,
   });
 
   final MemoryType type;
@@ -83,6 +84,7 @@ class SmartAddItem {
   final String? assistantId;
   final double valence;
   final double arousal;
+  final bool pinned;
 }
 
 /// Smart Add: candidate retrieval, LLM judge, NEW/MERGE/CONFLICT/SKIP (§12.6).
@@ -452,6 +454,7 @@ class MemorySmartAdd {
           source: source,
           valence: item.valence,
           arousal: item.arousal,
+          pinned: item.pinned,
         );
         for (final rid in normalized.relatedIds) {
           await repository.linkBidirectional(created.id, rid);
@@ -482,10 +485,13 @@ class MemorySmartAdd {
         final before = traceStep == null
             ? null
             : await _contentBefore(normalized.targetId);
-        final updated = await repository.updateContent(
+        var updated = await repository.updateContent(
           normalized.targetId!,
           normalized.mergedContent!.trim(),
         );
+        if (item.pinned && updated != null && !updated.pinned) {
+          updated = await repository.setPinned(updated.id, true);
+        }
         traceStep?.addMutation(
           MemoryTraceMutation(
             kind: MemoryTraceMutationKind.memoryMerged,
@@ -514,6 +520,7 @@ class MemorySmartAdd {
           source: source,
           valence: item.valence,
           arousal: item.arousal,
+          pinned: item.pinned,
         );
         await repository.linkBidirectional(created.id, oldId);
         for (final rid in normalized.relatedIds) {

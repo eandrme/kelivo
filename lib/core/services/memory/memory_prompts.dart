@@ -176,6 +176,7 @@ Output format (follow this XML exactly, no extra text):
 - 不使用「这个」「刚才」等指回本次对话的词
 - 「已有记忆」里已经出现过的信息不要重复提取
 - 每条可带可选的情绪属性：valence（-1 很负面，0 中性，1 很正面）和 arousal（0 平静，1 强烈）；它们描述这条记忆的情绪色彩，不是用户当前情绪，不确定时省略，系统默认中性
+- 只有当用户明确要求长期记住、不要忘记，或这条信息明显必须长期保留时，才加 pinned="true"；不要给每条都加
 
 ## 已有记忆
 {{existingMemory}}
@@ -211,6 +212,7 @@ Rules:
 - Do not use words like "this" or "just now" that point back to the current conversation
 - Do not re-extract anything already present in "Existing memory"
 - Each item may carry optional emotional attributes: valence (-1 negative, 0 neutral, 1 positive) and arousal (0 calm, 1 intense). They describe the emotional colour of this memory, not the user's current mood. Omit them when unsure; the system defaults to neutral.
+- Add pinned="true" only when the user explicitly asks to remember something long term or not to forget it, or when the information clearly must be kept indefinitely. Do not pin every item.
 
 ## Existing memory
 {{existingMemory}}

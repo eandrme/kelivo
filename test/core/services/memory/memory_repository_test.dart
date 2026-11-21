@@ -290,6 +290,36 @@ void main() {
       expect(batch.arousal, 0.2);
     });
 
+    test('create and createMany persist pinned; setPinned toggles', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.identity,
+        content: 'Pinned memory',
+        source: MemorySource.manual,
+        pinned: true,
+      );
+      expect(created.pinned, isTrue);
+      expect((await memoryRepository.readAll()).single.pinned, isTrue);
+
+      final unpinned = await memoryRepository.setPinned(created.id, false);
+      expect(unpinned?.pinned, isFalse);
+      expect((await memoryRepository.readAll()).single.pinned, isFalse);
+
+      await memoryRepository.createMany(const [
+        MemoryCreateDraft(
+          scope: MemoryScope.global,
+          type: MemoryType.workflow,
+          content: 'Pinned batch',
+          source: MemorySource.extracted,
+          pinned: true,
+        ),
+      ]);
+      final batch = (await memoryRepository.readAll()).firstWhere(
+        (entry) => entry.content == 'Pinned batch',
+      );
+      expect(batch.pinned, isTrue);
+    });
+
     test('createMany deduplicates and persists migration receipts', () async {
       final existing = await memoryRepository.create(
         scope: MemoryScope.global,

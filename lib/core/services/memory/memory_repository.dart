@@ -16,6 +16,7 @@ class MemoryCreateDraft {
     this.migrationId,
     this.valence = 0.0,
     this.arousal = 0.3,
+    this.pinned = false,
   });
 
   final MemoryScope scope;
@@ -27,6 +28,7 @@ class MemoryCreateDraft {
   final String? migrationId;
   final double valence;
   final double arousal;
+  final bool pinned;
 }
 
 class MemoryCreateManyResult {
@@ -73,6 +75,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     List<String> relatedIds = const [],
     double valence = 0.0,
     double arousal = 0.3,
+    bool pinned = false,
   }) {
     return runExclusive(() async {
       _validateScope(scope, assistantId);
@@ -93,6 +96,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         updatedAt: now,
         valence: valence,
         arousal: arousal,
+        pinned: pinned,
       );
       all.add(entry);
       await writeAll(all);
@@ -182,6 +186,7 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
           updatedAt: now,
           valence: draft.valence,
           arousal: draft.arousal,
+          pinned: draft.pinned,
         );
         all.add(entry);
         contentIndexes[contentKey] = all.length - 1;
@@ -219,6 +224,20 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
         type: type,
         updatedAt: DateTime.now().toUtc(),
       );
+      all[index] = updated;
+      await writeAll(all);
+      return updated;
+    });
+  }
+
+  /// Toggles the manual/automatic pin flag without touching content dates.
+  Future<MemoryEntry?> setPinned(String id, bool pinned) {
+    return runExclusive(() async {
+      final all = await readAll();
+      final index = all.indexWhere((entry) => entry.id == id);
+      if (index == -1) return null;
+      final updated = all[index].copyWith(pinned: pinned);
+      if (updated.pinned == all[index].pinned) return updated;
       all[index] = updated;
       await writeAll(all);
       return updated;

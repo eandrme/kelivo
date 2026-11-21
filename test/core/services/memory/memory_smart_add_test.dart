@@ -359,6 +359,50 @@ Sure:
       },
     );
 
+    test('NEW keeps pin and MERGE can pin an existing entry', () async {
+      final existing = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.identity,
+        content: '用户住在上海。',
+        source: MemorySource.manual,
+      );
+
+      final neu = await smartAdd.applyDecision(
+        item: const SmartAddItem(
+          type: MemoryType.identity,
+          content: '用户是软件工程师。',
+          scope: MemoryScope.global,
+          pinned: true,
+        ),
+        decision: const SmartAddDecision(action: SmartAddAction.neu),
+        candidateIds: const <String>{},
+        source: MemorySource.extracted,
+      );
+      final created = (await chatRepository.memoriesByIds([neu.id!])).single;
+      expect(created.pinned, isTrue);
+
+      final merged = await smartAdd.applyDecision(
+        item: const SmartAddItem(
+          type: MemoryType.identity,
+          content: 'ignored',
+          scope: MemoryScope.global,
+          pinned: true,
+        ),
+        decision: SmartAddDecision(
+          action: SmartAddAction.merge,
+          targetId: existing.id,
+          mergedContent: '用户住在上海，偶尔去杭州。',
+        ),
+        candidateIds: {existing.id},
+        source: MemorySource.extracted,
+      );
+      expect(merged.action, SmartAddAction.merge);
+      final afterMerge = (await chatRepository.memoriesByIds([
+        existing.id,
+      ])).single;
+      expect(afterMerge.pinned, isTrue);
+    });
+
     test('exact duplicate fast-path SKIP without LLM', () async {
       await seedAssistant('a1');
       final e = await memoryRepository.create(

@@ -44,6 +44,7 @@ void main() {
       expect(payload['lastDecayAt'], isNull);
       expect(payload, contains('archiveReason'));
       expect(payload['archiveReason'], isNull);
+      expect(payload['pinned'], isFalse);
 
       final roundTrip = MemoryEntry.fromPayload(payload);
       expect(roundTrip.id, entry.id);
@@ -57,6 +58,7 @@ void main() {
       expect(roundTrip.strength, 1.0);
       expect(roundTrip.lastDecayAt, isNull);
       expect(roundTrip.archiveReason, isNull);
+      expect(roundTrip.pinned, isFalse);
       expect(
         roundTrip.createdAt.microsecondsSinceEpoch,
         entry.createdAt.microsecondsSinceEpoch,
@@ -80,6 +82,7 @@ void main() {
       double strength = 1.0,
       DateTime? lastDecayAt,
       String? archiveReason,
+      bool pinned = false,
     }) => MemoryEntry(
       id: 'mem_a1b2c3d4',
       scope: MemoryScope.global,
@@ -91,6 +94,7 @@ void main() {
       strength: strength,
       lastDecayAt: lastDecayAt,
       archiveReason: archiveReason,
+      pinned: pinned,
       createdAt: DateTime.utc(2026, 8, 6),
       updatedAt: DateTime.utc(2026, 8, 7),
     );
@@ -114,6 +118,7 @@ void main() {
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
+      expect(entry.pinned, isFalse);
     });
 
     test('affect fields survive a JSON backup round trip', () {
@@ -124,6 +129,7 @@ void main() {
         strength: 0.42,
         lastDecayAt: lastDecayAt,
         archiveReason: 'forgetting:strength<0.3',
+        pinned: true,
       );
 
       final decoded =
@@ -138,6 +144,7 @@ void main() {
         lastDecayAt.microsecondsSinceEpoch,
       );
       expect(restored.archiveReason, 'forgetting:strength<0.3');
+      expect(restored.pinned, isTrue);
     });
 
     test(
@@ -187,6 +194,7 @@ void main() {
       expect(entry.strength, 1.0);
       expect(entry.lastDecayAt, isNull);
       expect(entry.archiveReason, isNull);
+      expect(entry.pinned, isFalse);
     });
 
     test('copyWith preserves affect fields and can clear optional ones', () {
@@ -197,6 +205,7 @@ void main() {
         strength: 0.7,
         lastDecayAt: lastDecayAt,
         archiveReason: 'manual',
+        pinned: true,
       );
 
       final updated = entry.copyWith(content: '更新后的内容');
@@ -206,6 +215,7 @@ void main() {
       expect(updated.strength, 0.7);
       expect(updated.lastDecayAt, lastDecayAt);
       expect(updated.archiveReason, 'manual');
+      expect(updated.pinned, isTrue);
 
       final cleared = updated.copyWith(
         clearLastDecayAt: true,
@@ -216,6 +226,8 @@ void main() {
       expect(cleared.valence, 0.5);
       expect(cleared.arousal, 0.6);
       expect(cleared.strength, 0.7);
+      expect(cleared.pinned, isTrue);
+      expect(cleared.copyWith(pinned: false).pinned, isFalse);
     });
   });
 

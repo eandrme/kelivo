@@ -36,6 +36,9 @@ class MemoryEntry {
   /// Why this entry was archived, e.g. automatic forgetting.
   final String? archiveReason;
 
+  /// Pinned entries are exempt from automatic decay and archiving.
+  final bool pinned;
+
   MemoryEntry({
     required this.id,
     required this.scope,
@@ -53,6 +56,7 @@ class MemoryEntry {
     double strength = 1.0,
     this.lastDecayAt,
     this.archiveReason,
+    this.pinned = false,
   }) : valence = _clampDouble(valence, -1.0, 1.0, 0.0),
        arousal = _clampDouble(arousal, 0.0, 1.0, 0.3),
        strength = _clampDouble(strength, 0.0, 1.0, 1.0);
@@ -74,6 +78,7 @@ class MemoryEntry {
     double? strength,
     DateTime? lastDecayAt,
     String? archiveReason,
+    bool? pinned,
     bool clearAssistantId = false,
     bool clearLastDecayAt = false,
     bool clearArchiveReason = false,
@@ -96,6 +101,7 @@ class MemoryEntry {
     archiveReason: clearArchiveReason
         ? null
         : (archiveReason ?? this.archiveReason),
+    pinned: pinned ?? this.pinned,
   );
 
   Map<String, dynamic> toPayload() => {
@@ -115,6 +121,7 @@ class MemoryEntry {
     'strength': strength,
     'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
     'archiveReason': archiveReason,
+    'pinned': pinned,
   };
 
   static MemoryEntry fromPayload(Map<String, dynamic> json) {
@@ -144,6 +151,7 @@ class MemoryEntry {
       archiveReason: json['archiveReason'] is String
           ? json['archiveReason'] as String
           : null,
+      pinned: json['pinned'] == true || json['pinned'] == 1,
     );
   }
 

@@ -194,10 +194,16 @@ class MemoryProviderV2 extends ChangeNotifier {
     return entry;
   }
 
-  Future<bool> archive(String id) async {
-    final ok = await repository.archive(id);
+  Future<bool> archive(String id, {String? reason}) async {
+    final ok = await repository.archive(id, reason: reason);
     await _refreshAfterWrite();
     return ok;
+  }
+
+  Future<MemoryEntry?> setPinned(String id, bool pinned) async {
+    final entry = await repository.setPinned(id, pinned);
+    await _refreshAfterWrite();
+    return entry;
   }
 
   Future<bool> restore(String id) async {

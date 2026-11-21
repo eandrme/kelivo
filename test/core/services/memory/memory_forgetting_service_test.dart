@@ -49,6 +49,7 @@ void main() {
     DateTime? createdAt,
     DateTime? lastDecayAt,
     bool noDecayBaseline = false,
+    bool pinned = false,
     String? archiveReason,
   }) async {
     final created = createdAt ?? now.subtract(const Duration(days: 30));
@@ -78,6 +79,7 @@ void main() {
       'strength': strength,
       'lastDecayAt': effectiveLastDecayAt?.microsecondsSinceEpoch,
       'archiveReason': archiveReason,
+      'pinned': pinned,
     });
     await preferences.setString(
       BusinessEntityKind.memoryEntry.sourceKey,
@@ -274,6 +276,36 @@ void main() {
     final untouched = entries.firstWhere((entry) => entry.id == 'mem_b0000001');
     expect(untouched.status, MemoryStatus.active);
     expect(untouched.strength, 0.1);
+  });
+
+  test('pinned entries are skipped by decay and archiving', () async {
+    await putEntry(
+      id: 'mem_pinned01',
+      content: 'Pinned old weak',
+      createdAt: now.subtract(const Duration(days: 90)),
+      strength: 0.1,
+      pinned: true,
+      noDecayBaseline: true,
+    );
+    await putEntry(
+      id: 'mem_weak0001',
+      content: 'Unpinned old weak',
+      createdAt: now.subtract(const Duration(days: 90)),
+      strength: 0.1,
+    );
+
+    final report = await service(dryRun: false).apply();
+    expect(report.scanned, 2);
+    expect(report.pinnedCount, 1);
+    expect(report.archiveIds, ['mem_weak0001']);
+
+    final entries = await memoryRepository.readAll();
+    final pinned = entries.firstWhere((entry) => entry.id == 'mem_pinned01');
+    expect(pinned.status, MemoryStatus.active);
+    expect(pinned.strength, 0.1);
+    expect(pinned.lastDecayAt, isNull);
+    final weak = entries.firstWhere((entry) => entry.id == 'mem_weak0001');
+    expect(weak.status, MemoryStatus.archived);
   });
 
   test('identity and instruction never decay or archive', () async {

@@ -1727,6 +1727,10 @@ class MemoryEntryCard extends StatelessWidget {
     await context.read<MemoryProviderV2>().hardDelete(entry.id);
   }
 
+  Future<void> _togglePin(BuildContext context) async {
+    await context.read<MemoryProviderV2>().setPinned(entry.id, !entry.pinned);
+  }
+
   Future<void> _toggleScope(BuildContext context) async {
     final assistantId = scopeToggleAssistantId;
     if (assistantId == null) return;
@@ -1748,6 +1752,13 @@ class MemoryEntryCard extends StatelessWidget {
   Future<void> _showContextMenu(BuildContext context, Offset global) async {
     final l10n = AppLocalizations.of(context)!;
     final items = <DesktopContextMenuItem>[
+      DesktopContextMenuItem(
+        icon: entry.pinned ? Lucide.PinOff : Lucide.Pin,
+        label: entry.pinned
+            ? l10n.sideDrawerMenuUnpin
+            : l10n.chatHistoryPagePin,
+        onTap: () => _togglePin(context),
+      ),
       if (entry.status == MemoryStatus.active)
         DesktopContextMenuItem(
           icon: Lucide.Bookmark,
@@ -1837,6 +1848,17 @@ class MemoryEntryCard extends StatelessWidget {
                         : () => _toggleScope(context),
                   ),
                   const Spacer(),
+                  _IconAction(
+                    icon: entry.pinned ? Lucide.Pin : Lucide.PinOff,
+                    color: entry.pinned
+                        ? cs.primary
+                        : cs.onSurface.withValues(alpha: 0.55),
+                    tooltip: entry.pinned
+                        ? l10n.sideDrawerMenuUnpin
+                        : l10n.chatHistoryPagePin,
+                    onTap: () => _togglePin(context),
+                  ),
+                  const SizedBox(width: 4),
                   if (onEdit != null)
                     _IconAction(
                       icon: Lucide.Pencil,
