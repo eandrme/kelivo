@@ -764,6 +764,22 @@ void main() {
       expect(payload['related'], isEmpty);
     });
 
+    test('search reinforces the top matched memory', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: 'User develops Flutter apps with care for list performance.',
+        source: MemorySource.manual,
+      );
+      await call(MemoryTools.memorySearchProfile, {
+        'query': 'Flutter performance',
+      });
+      final loaded = (await chatRepository.memoriesByIds([created.id])).single;
+      expect(loaded.recallCount, 1);
+      expect(loaded.lastRecalledAt, isNotNull);
+      expect(loaded.lastRecalledAt!.microsecondsSinceEpoch, greaterThan(0));
+    });
+
     test('1-hop relatedIds expansion capped at 10 (§18.1 item 15)', () async {
       final hub = await memoryRepository.create(
         scope: MemoryScope.global,

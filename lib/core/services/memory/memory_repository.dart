@@ -249,6 +249,40 @@ class MemoryRepository extends JsonBlobStore<MemoryEntry> {
     });
   }
 
+  /// Marks entries as explicitly recalled/used and reinforces them.
+  ///
+  /// Only active entries are touched. The boost is capped at 1.0 and resets the
+  /// decay window so a recall does not immediately decay away again.
+  Future<int> recordRecalls(
+    Iterable<String> ids, {
+    DateTime? now,
+    double boost = 0.1,
+  }) {
+    return runExclusive(() async {
+      final targets = ids.toSet();
+      if (targets.isEmpty) return 0;
+      final timestamp = (now ?? DateTime.now()).toUtc();
+      final all = await readAll();
+      var changed = 0;
+      for (var i = 0; i < all.length; i++) {
+        final entry = all[i];
+        if (entry.status != MemoryStatus.active ||
+            !targets.contains(entry.id)) {
+          continue;
+        }
+        all[i] = entry.copyWith(
+          strength: (entry.strength + boost).clamp(0.0, 1.0).toDouble(),
+          lastDecayAt: timestamp,
+          recallCount: entry.recallCount + 1,
+          lastRecalledAt: timestamp,
+        );
+        changed++;
+      }
+      if (changed > 0) await writeAll(all);
+      return changed;
+    });
+  }
+
   /// Toggles the manual/automatic pin flag without touching content dates.
   Future<MemoryEntry?> setPinned(String id, bool pinned) {
     return runExclusive(() async {

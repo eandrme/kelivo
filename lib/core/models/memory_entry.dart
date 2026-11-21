@@ -42,6 +42,12 @@ class MemoryEntry {
   /// Pinned entries are exempt from automatic decay and archiving.
   final bool pinned;
 
+  /// Number of explicit recalls/reinforcements.
+  final int recallCount;
+
+  /// Last time this entry was explicitly recalled.
+  final DateTime? lastRecalledAt;
+
   MemoryEntry({
     required this.id,
     required this.scope,
@@ -61,10 +67,13 @@ class MemoryEntry {
     this.lastDecayAt,
     this.archiveReason,
     this.pinned = false,
+    int recallCount = 0,
+    this.lastRecalledAt,
   }) : valence = _clampDouble(valence, -1.0, 1.0, 0.0),
        arousal = _clampDouble(arousal, 0.0, 1.0, 0.3),
        importance = _clampDouble(importance, 0.0, 1.0, 0.0),
-       strength = _clampDouble(strength, 0.0, 1.0, 1.0);
+       strength = _clampDouble(strength, 0.0, 1.0, 1.0),
+       recallCount = recallCount < 0 ? 0 : recallCount;
 
   MemoryEntry copyWith({
     String? id,
@@ -85,6 +94,8 @@ class MemoryEntry {
     DateTime? lastDecayAt,
     String? archiveReason,
     bool? pinned,
+    int? recallCount,
+    DateTime? lastRecalledAt,
     bool clearAssistantId = false,
     bool clearLastDecayAt = false,
     bool clearArchiveReason = false,
@@ -109,6 +120,8 @@ class MemoryEntry {
         ? null
         : (archiveReason ?? this.archiveReason),
     pinned: pinned ?? this.pinned,
+    recallCount: recallCount ?? this.recallCount,
+    lastRecalledAt: lastRecalledAt ?? this.lastRecalledAt,
   );
 
   Map<String, dynamic> toPayload() => {
@@ -130,6 +143,8 @@ class MemoryEntry {
     'lastDecayAt': lastDecayAt?.microsecondsSinceEpoch,
     'archiveReason': archiveReason,
     'pinned': pinned,
+    'recallCount': recallCount,
+    'lastRecalledAt': lastRecalledAt?.microsecondsSinceEpoch,
   };
 
   static MemoryEntry fromPayload(Map<String, dynamic> json) {
@@ -161,6 +176,8 @@ class MemoryEntry {
           ? json['archiveReason'] as String
           : null,
       pinned: json['pinned'] == true || json['pinned'] == 1,
+      recallCount: _readInt(json['recallCount'], 0),
+      lastRecalledAt: _readDateTime(json['lastRecalledAt']),
     );
   }
 
@@ -176,6 +193,11 @@ class MemoryEntry {
 
   static double _readDouble(Object? value, double fallback) {
     if (value is num && value.isFinite) return value.toDouble();
+    return fallback;
+  }
+
+  static int _readInt(Object? value, int fallback) {
+    if (value is num) return value.toInt();
     return fallback;
   }
 

@@ -350,6 +350,37 @@ void main() {
       expect(batch.importance, 0.6);
     });
 
+    test('recordRecalls boosts strength and resets decay', () async {
+      final created = await memoryRepository.create(
+        scope: MemoryScope.global,
+        type: MemoryType.workflow,
+        content: 'Recalled memory',
+        source: MemorySource.extracted,
+      );
+      final now = DateTime.utc(2026, 10, 1);
+      await memoryRepository.updateForgettingStrengths({
+        created.id: 0.5,
+      }, decayedAt: now.subtract(const Duration(days: 20)));
+
+      expect(await memoryRepository.recordRecalls([created.id], now: now), 1);
+      final first = (await memoryRepository.readAll()).single;
+      expect(first.strength, closeTo(0.6, 0.0001));
+      expect(first.recallCount, 1);
+      expect(
+        first.lastRecalledAt!.microsecondsSinceEpoch,
+        now.microsecondsSinceEpoch,
+      );
+      expect(
+        first.lastDecayAt!.microsecondsSinceEpoch,
+        now.microsecondsSinceEpoch,
+      );
+
+      await memoryRepository.recordRecalls([created.id], now: now, boost: 2);
+      final capped = (await memoryRepository.readAll()).single;
+      expect(capped.strength, 1.0);
+      expect(capped.recallCount, 2);
+    });
+
     test('createMany deduplicates and persists migration receipts', () async {
       final existing = await memoryRepository.create(
         scope: MemoryScope.global,

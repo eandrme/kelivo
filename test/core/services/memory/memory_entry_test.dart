@@ -46,6 +46,8 @@ void main() {
       expect(payload, contains('archiveReason'));
       expect(payload['archiveReason'], isNull);
       expect(payload['pinned'], isFalse);
+      expect(payload['recallCount'], 0);
+      expect(payload['lastRecalledAt'], isNull);
 
       final roundTrip = MemoryEntry.fromPayload(payload);
       expect(roundTrip.id, entry.id);
@@ -61,6 +63,8 @@ void main() {
       expect(roundTrip.lastDecayAt, isNull);
       expect(roundTrip.archiveReason, isNull);
       expect(roundTrip.pinned, isFalse);
+      expect(roundTrip.recallCount, 0);
+      expect(roundTrip.lastRecalledAt, isNull);
       expect(
         roundTrip.createdAt.microsecondsSinceEpoch,
         entry.createdAt.microsecondsSinceEpoch,
@@ -86,6 +90,8 @@ void main() {
       DateTime? lastDecayAt,
       String? archiveReason,
       bool pinned = false,
+      int recallCount = 0,
+      DateTime? lastRecalledAt,
     }) => MemoryEntry(
       id: 'mem_a1b2c3d4',
       scope: MemoryScope.global,
@@ -99,6 +105,8 @@ void main() {
       lastDecayAt: lastDecayAt,
       archiveReason: archiveReason,
       pinned: pinned,
+      recallCount: recallCount,
+      lastRecalledAt: lastRecalledAt,
       createdAt: DateTime.utc(2026, 8, 6),
       updatedAt: DateTime.utc(2026, 8, 7),
     );
@@ -128,6 +136,7 @@ void main() {
 
     test('affect fields survive a JSON backup round trip', () {
       final lastDecayAt = DateTime.utc(2026, 8, 20, 9, 30);
+      final lastRecalledAt = DateTime.utc(2026, 8, 21, 10);
       final entry = build(
         valence: -0.6,
         arousal: 0.8,
@@ -136,6 +145,8 @@ void main() {
         lastDecayAt: lastDecayAt,
         archiveReason: 'forgetting:strength<0.3',
         pinned: true,
+        recallCount: 3,
+        lastRecalledAt: lastRecalledAt,
       );
 
       final decoded =
@@ -152,6 +163,11 @@ void main() {
       );
       expect(restored.archiveReason, 'forgetting:strength<0.3');
       expect(restored.pinned, isTrue);
+      expect(restored.recallCount, 3);
+      expect(
+        restored.lastRecalledAt!.microsecondsSinceEpoch,
+        lastRecalledAt.microsecondsSinceEpoch,
+      );
     });
 
     test(
@@ -226,6 +242,8 @@ void main() {
         lastDecayAt: lastDecayAt,
         archiveReason: 'manual',
         pinned: true,
+        recallCount: 2,
+        lastRecalledAt: DateTime.utc(2026, 9, 2),
       );
 
       final updated = entry.copyWith(content: '更新后的内容');
@@ -237,6 +255,7 @@ void main() {
       expect(updated.lastDecayAt, lastDecayAt);
       expect(updated.archiveReason, 'manual');
       expect(updated.pinned, isTrue);
+      expect(updated.recallCount, 2);
 
       final cleared = updated.copyWith(
         clearLastDecayAt: true,
@@ -251,6 +270,7 @@ void main() {
       expect(cleared.pinned, isTrue);
       expect(cleared.copyWith(pinned: false).pinned, isFalse);
       expect(cleared.copyWith(importance: 0.2).importance, 0.2);
+      expect(cleared.copyWith(recallCount: 3).recallCount, 3);
     });
   });
 

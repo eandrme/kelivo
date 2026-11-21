@@ -303,7 +303,9 @@ abstract final class MemoryTools {
             args: args,
             assistant: assistant,
             chatRepository: chatRepository,
+            repository: repository,
           );
+          await onMutated?.call();
         case memoryEdit:
           result = await _handleMemoryEdit(
             args: args,
@@ -558,6 +560,7 @@ abstract final class MemoryTools {
     required Map<String, dynamic> args,
     required Assistant assistant,
     required ChatDatabaseRepository chatRepository,
+    MemoryRepository? repository,
   }) async {
     final query = (args['query'] ?? '').toString();
     if (query.trim().isEmpty) {
@@ -592,6 +595,12 @@ abstract final class MemoryTools {
       matchAll: true,
       limit: limit,
     );
+
+    // A search is an explicit recall attempt. Reinforce the top hit only, so
+    // merely listing memories never inflates strength.
+    if (repository != null && matched.isNotEmpty) {
+      await repository.recordRecalls([matched.first.id]);
+    }
 
     final matchedIds = {for (final e in matched) e.id};
     // relatedId → first via matched id (matched order).

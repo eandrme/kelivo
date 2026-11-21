@@ -1611,6 +1611,12 @@ class MemoryAffectStats extends StatelessWidget {
           value: entry.importance.toStringAsFixed(2),
           color: cs.secondary,
         ),
+        if (entry.recallCount > 0)
+          _MetricPill(
+            label: 'R',
+            value: '${entry.recallCount}',
+            color: cs.secondary,
+          ),
         _MetricPill(
           label: 'S',
           value: '${(entry.strength * 100).round()}%',
