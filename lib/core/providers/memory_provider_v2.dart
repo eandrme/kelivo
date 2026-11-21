@@ -155,6 +155,9 @@ class MemoryProviderV2 extends ChangeNotifier {
     required String content,
     required MemorySource source,
     List<String> relatedIds = const [],
+    double valence = 0.0,
+    double arousal = 0.3,
+    double importance = 0.0,
   }) async {
     final entry = await repository.create(
       scope: scope,
@@ -163,6 +166,9 @@ class MemoryProviderV2 extends ChangeNotifier {
       content: content,
       source: source,
       relatedIds: relatedIds,
+      valence: valence,
+      arousal: arousal,
+      importance: importance,
     );
     await _refreshAfterWrite();
     return entry;
@@ -208,6 +214,20 @@ class MemoryProviderV2 extends ChangeNotifier {
 
   Future<MemoryEntry?> setImportance(String id, double importance) async {
     final entry = await repository.setImportance(id, importance);
+    await _refreshAfterWrite();
+    return entry;
+  }
+
+  Future<MemoryEntry?> updateAffect(
+    String id, {
+    required double valence,
+    required double arousal,
+  }) async {
+    final entry = await repository.updateAffect(
+      id,
+      valence: valence,
+      arousal: arousal,
+    );
     await _refreshAfterWrite();
     return entry;
   }

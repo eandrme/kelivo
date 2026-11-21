@@ -1232,6 +1232,9 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
   late final TextEditingController _content;
   late MemoryType _type;
   late MemoryScope _scope;
+  late double _valence;
+  late double _arousal;
+  late double _importance;
   String? _assistantId;
   bool _saving = false;
 
@@ -1242,6 +1245,9 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
     _content = TextEditingController(text: existing?.content ?? '');
     _type = existing?.type ?? MemoryType.identity;
     _scope = existing?.scope ?? widget.defaultScope;
+    _valence = existing?.valence ?? 0.0;
+    _arousal = existing?.arousal ?? 0.3;
+    _importance = existing?.importance ?? 0.0;
     _assistantId = existing?.assistantId ?? widget.defaultAssistantId;
   }
 
@@ -1257,6 +1263,50 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
     if (current != null && current.isNotEmpty) return current;
     if (!widget.allowAssistantPicker) return widget.defaultAssistantId;
     return assistants.isEmpty ? null : assistants.first.id;
+  }
+
+  Widget _affectRow({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        SizedBox(
+          width: 18,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: AppFontWeights.semibold,
+              color: cs.onSurface.withValues(alpha: 0.75),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Slider(
+            value: value.clamp(min, max).toDouble(),
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+        ),
+        SizedBox(
+          width: 40,
+          child: Text(
+            value.toStringAsFixed(2),
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12,
+              color: cs.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _save() async {
@@ -1283,6 +1333,9 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
           type: nextType,
           content: text,
           source: MemorySource.manual,
+          valence: _valence,
+          arousal: _arousal,
+          importance: _importance,
         );
       } else {
         final scopeKindChanged = nextScope != existing.scope;
@@ -1311,6 +1364,16 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
             scope: nextScope,
             assistantId: assistantId,
           );
+        }
+        if (_valence != existing.valence || _arousal != existing.arousal) {
+          await mp.updateAffect(
+            existing.id,
+            valence: _valence,
+            arousal: _arousal,
+          );
+        }
+        if (_importance != existing.importance) {
+          await mp.setImportance(existing.id, _importance);
         }
       }
       if (mounted) navigator.maybePop();
@@ -1386,6 +1449,29 @@ class _MemoryEntryEditFormState extends State<MemoryEntryEditForm> {
           ],
         ),
       ],
+      const SizedBox(height: 16),
+      MemorySectionLabel(text: 'V · A · I'),
+      _affectRow(
+        label: 'V',
+        value: _valence,
+        min: -1,
+        max: 1,
+        onChanged: (value) => setState(() => _valence = value),
+      ),
+      _affectRow(
+        label: 'A',
+        value: _arousal,
+        min: 0,
+        max: 1,
+        onChanged: (value) => setState(() => _arousal = value),
+      ),
+      _affectRow(
+        label: 'I',
+        value: _importance,
+        min: 0,
+        max: 1,
+        onChanged: (value) => setState(() => _importance = value),
+      ),
     ];
   }
 
